@@ -16,9 +16,7 @@ public class User {
    @Column(name = "category")
    private String category;
 
-   public User() {
-
-   }
+   public User() {}
 
    public User(Integer id, String email, String category) {
       this.id = id;
