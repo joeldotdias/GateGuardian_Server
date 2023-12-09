@@ -37,6 +37,12 @@ public class Resident {
 
    public Resident() {}
 
+   public Resident(String name, String email, String society) {
+      this.name = name;
+      this.email = email;
+      this.society = society;
+   }
+
    public Resident(Integer residentId, String name, String email, String pfpUrl, String aboutMe, String phoneNo, Integer flatNo, String building, String society) {
       this.residentId = residentId;
       this.name = name;

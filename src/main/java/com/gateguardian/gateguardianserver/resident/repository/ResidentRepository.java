@@ -13,4 +13,7 @@ public interface ResidentRepository extends JpaRepository<Resident, Integer> {
 
    @Query(value = "SELECT * FROM residents where email = :email", nativeQuery = true)
    List<Resident> getResidentByEmail(@Param("email") String email);
+
+   @Query(value = "SELECT * FROM residents where society = :society", nativeQuery = true)
+   List<Resident> getResidentsBySociety(@Param("society") String society);
 }

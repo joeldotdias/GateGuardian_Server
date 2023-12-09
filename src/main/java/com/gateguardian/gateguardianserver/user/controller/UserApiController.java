@@ -5,6 +5,8 @@ import com.gateguardian.gateguardianserver.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class UserApiController {
 
@@ -15,10 +17,10 @@ public class UserApiController {
    public User getUserByEmail(
            @RequestParam(name = "email") String email
    ) {
-      return userService.getUserByEmail(email).get(0);
+      return userService.getUserByEmail(email);
    }
 
-   @PostMapping("/save-user")
+   @PostMapping("/user-save")
    public void saveUser(
            @RequestBody User user
    ) {

@@ -6,7 +6,9 @@ import java.util.List;
 
 public interface UserService {
 
-   List<User> getUserByEmail(String email);
+   User getUserByEmail(String email);
+
+   List<User> getUsersBySociety(String society);
 
    void saveUser(User user);
 }
