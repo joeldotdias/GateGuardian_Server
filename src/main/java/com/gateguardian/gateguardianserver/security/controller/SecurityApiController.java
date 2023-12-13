@@ -1,0 +1,71 @@
+package com.gateguardian.gateguardianserver.security.controller;
+
+import com.gateguardian.gateguardianserver.resident.model.Visitor;
+import com.gateguardian.gateguardianserver.security.SecurityDto;
+import com.gateguardian.gateguardianserver.security.model.Security;
+import com.gateguardian.gateguardianserver.security.service.SecurityService;
+import com.gateguardian.gateguardianserver.security.service.VisitorLogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class SecurityApiController {
+
+   @Autowired
+   private SecurityService securityService;
+
+   @Autowired
+   private VisitorLogService visitorLogService;
+
+   @GetMapping("/security")
+   public Security getSecurityByEmail(
+           @RequestParam(name = "email") String email
+   ) {
+      return securityService.getSecurityByEmail(email);
+   }
+
+
+   @GetMapping("/visitors-for")
+   public List<Visitor> getVisitorBySociety(
+           @RequestParam(name = "email") String email
+   ) {
+      return securityService.getVisitorsBySociety(email);
+   }
+
+
+   @PutMapping("/update-security-pfp")
+   public void updateSecurityPfp(
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "pfpUrl") String pfpUrl
+   ) {
+      securityService.updateSecurityPfp(email, pfpUrl);
+   }
+
+   @PutMapping("update-security-profile")
+   public void updateSecurityProfile(
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "name") String name,
+           @RequestParam(name = "badgeId") String badgeId,
+           @RequestParam(name = "phoneNo") String phoneNo
+   ) {
+      securityService.updateSecurityProfile(email, name, badgeId, phoneNo);
+   }
+
+   @GetMapping("/securities")
+   public List<SecurityDto> getSecuritiesBySociety(
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      return securityService.getSecurityBySociety(adminEmail);
+   }
+
+   @PostMapping("/security-save")
+   public void saveSecurity(
+           @RequestParam(name = "name") String name,
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      securityService.saveSecurity(name, email, adminEmail);
+   }
+}

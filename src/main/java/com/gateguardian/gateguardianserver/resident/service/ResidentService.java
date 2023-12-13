@@ -13,7 +13,7 @@ public interface ResidentService {
 
    Resident getResidentByEmail(String email);
 
-   List<ResidentDto> getResidentsBySociety(String society);
+   List<ResidentDto> getResidentsBySociety(String adminEmail);
 
    void updateResidentPfp(String email, String pfpUrl);
 

@@ -1,9 +1,11 @@
 package com.gateguardian.gateguardianserver.resident.controller;
 
 import com.gateguardian.gateguardianserver.resident.dto.ResidentDto;
+import com.gateguardian.gateguardianserver.resident.dto.VisitorCredDto;
 import com.gateguardian.gateguardianserver.resident.dto.VisitorDto;
 import com.gateguardian.gateguardianserver.resident.model.EventMemory;
 import com.gateguardian.gateguardianserver.resident.model.Resident;
+import com.gateguardian.gateguardianserver.resident.model.Visitor;
 import com.gateguardian.gateguardianserver.resident.service.EventMemoryService;
 import com.gateguardian.gateguardianserver.resident.service.ResidentService;
 import com.gateguardian.gateguardianserver.resident.service.VisitorService;
@@ -32,9 +34,9 @@ public class ResidentApiController {
 
    @GetMapping("/residents")
    public List<ResidentDto> getResidentBySociety(
-           @RequestParam(name = "society") String society
+           @RequestParam(name = "admin") String adminEmail
    ) {
-      return residentService.getResidentsBySociety(society);
+      return residentService.getResidentsBySociety(adminEmail);
    }
 
    @PutMapping("/update-pfp")
@@ -73,8 +75,9 @@ public class ResidentApiController {
       residentService.updateResidentProfile(email, name, aboutMe, phoneNo);
    }
 
+
    @GetMapping("/visitors")
-   public List<VisitorDto> getVisitorsByResidentEmail(
+   public List<Visitor> getVisitorsByResidentEmail(
            @RequestParam(name = "email") String email
    ) {
       return visitorService.getVisitorsByEmail(email);
@@ -94,7 +97,14 @@ public class ResidentApiController {
       return visitorService.getRecentVisitorOtp(email);
    }
 
-   @GetMapping("visitor-otp")
+//   @GetMapping("/visitor-recento")
+//   public VisitorCredDto getRecentVisitorOtpO(
+//           @RequestParam(name = "email") String email
+//   ) {
+//      return visitorService.getRecentVisitorCred(email);
+//   }
+
+   @GetMapping("/visitor-otp")
    public String getVisitorOtp(
            @RequestParam("visitorId") Integer visitorId
    ) {

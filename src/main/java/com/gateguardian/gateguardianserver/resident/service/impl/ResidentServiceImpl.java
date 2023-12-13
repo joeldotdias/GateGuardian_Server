@@ -42,8 +42,8 @@ public class ResidentServiceImpl implements ResidentService {
    }
 
    @Override
-   public List<ResidentDto> getResidentsBySociety(String email) {
-      String society = residentRepository.getResidentByEmail(email).get(0).getSociety();
+   public List<ResidentDto> getResidentsBySociety(String adminEmail) {
+      String society = residentRepository.getResidentByEmail(adminEmail).get(0).getSociety();
       List<Resident> residents = residentRepository.getResidentsBySociety(society);
       List<ResidentDto> residentDtos = new ArrayList<>();
 

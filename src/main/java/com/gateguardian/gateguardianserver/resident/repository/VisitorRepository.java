@@ -11,9 +11,12 @@ import java.util.List;
 @Repository
 public interface VisitorRepository extends JpaRepository<Visitor, Integer> {
 
-   @Query(value = "SELECT * FROM visitors WHERE resident_email = :email", nativeQuery = true)
+   @Query(value = "SELECT * FROM visitors WHERE host_email = :email", nativeQuery = true)
    List<Visitor> getVisitorsByEmail(@Param("email")String email);
 
    @Query(value = "SELECT * FROM visitors WHERE visitor_id = :visitorId", nativeQuery = true)
    List<Visitor> getVisitorById(@Param("visitorId")Integer visitorId);
+
+   @Query(value = "SELECT * FROM visitors WHERE host_society = :society", nativeQuery = true)
+   List<Visitor> getVisitorsBySociety(@Param("society") String society);
 }

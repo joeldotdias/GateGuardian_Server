@@ -3,7 +3,7 @@ package com.gateguardian.gateguardianserver.security.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "security")
+@Table(name = "securities")
 public class Security {
 
    @Id
@@ -23,6 +23,9 @@ public class Security {
    @Column(name = "phone_no")
    private String phoneNo;
 
+   @Column(name = "badge_id")
+   private String badgeId;
+
    @Column(name = "society")
    private String society;
 
@@ -34,12 +37,13 @@ public class Security {
       this.society = society;
    }
 
-   public Security(Integer securityId, String name, String email, String pfpUrl, String phoneNo, String society) {
+   public Security(Integer securityId, String name, String email, String pfpUrl, String phoneNo, String badgeId, String society) {
       this.securityId = securityId;
       this.name = name;
       this.email = email;
       this.pfpUrl = pfpUrl;
       this.phoneNo = phoneNo;
+      this.badgeId = badgeId;
       this.society = society;
    }
 
@@ -57,6 +61,9 @@ public class Security {
 
    public String getPhoneNo() { return phoneNo; }
    public void setPhoneNo(String phoneNo) { this.phoneNo = phoneNo; }
+
+   public String getBadgeId() { return badgeId; }
+   public void setBadgeId(String badgeId) { this.badgeId = badgeId; }
 
    public String getSociety() { return society; }
    public void setSociety(String society) { this.society = society; }

@@ -1,14 +1,17 @@
 package com.gateguardian.gateguardianserver.resident.service.impl;
 
+import com.gateguardian.gateguardianserver.resident.dto.VisitorCredDto;
 import com.gateguardian.gateguardianserver.resident.dto.VisitorDto;
+import com.gateguardian.gateguardianserver.resident.model.Resident;
 import com.gateguardian.gateguardianserver.resident.model.Visitor;
+import com.gateguardian.gateguardianserver.resident.repository.ResidentRepository;
 import com.gateguardian.gateguardianserver.resident.repository.VisitorRepository;
 import com.gateguardian.gateguardianserver.resident.service.VisitorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class VisitorServiceImpl implements VisitorService {
@@ -16,23 +19,21 @@ public class VisitorServiceImpl implements VisitorService {
    @Autowired
    private VisitorRepository visitorRepository;
 
+   @Autowired
+   private ResidentRepository residentRepository;
+
    @Override
-   public List<VisitorDto> getVisitorsByEmail(String email) {
-      List<Visitor> visitors = visitorRepository.getVisitorsByEmail(email);
-      List<VisitorDto> visitorDtos = new ArrayList<>();
-
-      for(Visitor visitor: visitors) {
-         VisitorDto visitorDto = new VisitorDto(visitor.getVisitorId(), visitor.getName(), visitor.getPhoneNo(), visitor.getResidentEmail());
-         visitorDtos.add(visitorDto);
-      }
-
-      return visitorDtos;
+   public List<Visitor> getVisitorsByEmail(String email) {
+      return visitorRepository.getVisitorsByEmail(email);
    }
 
    @Override
    public void saveVisitor(VisitorDto visitorDto) {
+      String visitorUid = UUID.randomUUID().toString().substring(0,6).toUpperCase();
+      //String generatedOtp = UUID.randomUUID().toString().substring(0,6).toUpperCase();
       String generatedOtp = Integer.toString((int)(Math.random() * 900000) + 100000);
-      Visitor visitor = new Visitor(visitorDto.getName(), visitorDto.getPhoneNo(), visitorDto.getResidentEmail(), generatedOtp);
+      Resident resident = residentRepository.getResidentByEmail(visitorDto.getResidentEmail()).get(0);
+      Visitor visitor = new Visitor(visitorDto.getName(), visitorDto.getPhoneNo(), visitorDto.getResidentEmail(), resident.getFlatNo(), resident.getBuilding(), resident.getSociety(), visitorUid, generatedOtp);
       visitorRepository.save(visitor);
    }
 
@@ -41,6 +42,13 @@ public class VisitorServiceImpl implements VisitorService {
       List<Visitor> visitors = visitorRepository.getVisitorsByEmail(email);
       Visitor visitor = visitors.get(visitors.size() - 1);
       return visitor.getOtp();
+   }
+
+   @Override
+   public VisitorCredDto getRecentVisitorCred(String email) {
+      List<Visitor> visitors = visitorRepository.getVisitorsByEmail(email);
+      Visitor visitor = visitors.get(visitors.size() - 1);
+      return new VisitorCredDto(visitor.getUid(), visitor.getOtp());
    }
 
 
