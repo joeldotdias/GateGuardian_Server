@@ -5,7 +5,9 @@ import com.gateguardian.gateguardianserver.resident.repository.ResidentRepositor
 import com.gateguardian.gateguardianserver.resident.repository.VisitorRepository;
 import com.gateguardian.gateguardianserver.security.SecurityDto;
 import com.gateguardian.gateguardianserver.security.model.Security;
+import com.gateguardian.gateguardianserver.security.model.VisitorLog;
 import com.gateguardian.gateguardianserver.security.repository.SecurityRepository;
+import com.gateguardian.gateguardianserver.security.repository.VisitorLogRepository;
 import com.gateguardian.gateguardianserver.security.service.SecurityService;
 import com.gateguardian.gateguardianserver.user.model.User;
 import com.gateguardian.gateguardianserver.user.repository.UserRepository;
@@ -30,6 +32,9 @@ public class SecurityServiceImpl implements SecurityService {
    @Autowired
    VisitorRepository visitorRepository;
 
+   @Autowired
+   VisitorLogRepository visitorLogRepository;
+
    @Override
    public void saveSecurity(String name, String email, String adminEmail) {
       String society = residentRepository.getResidentByEmail(adminEmail).get(0).getSociety();
@@ -46,6 +51,21 @@ public class SecurityServiceImpl implements SecurityService {
    public List<Visitor> getVisitorsBySociety(String email) {
       Security security = securityRepository.getSecurityByEmail(email).get(0);
       return visitorRepository.getVisitorsBySociety(security.getSociety());
+   }
+
+   @Override
+   public void moveVerifiedVisitorToLogs(Integer visitorId) {
+      Visitor verifiedVisitor = visitorRepository.getVisitorById(visitorId).get(0);
+      VisitorLog visitorLog = new VisitorLog(verifiedVisitor.getName(), verifiedVisitor.getPhoneNo(), verifiedVisitor.getHostFlat(), verifiedVisitor.getHostBuilding(), verifiedVisitor.getSociety());
+      visitorLogRepository.save(visitorLog);
+      visitorRepository.delete(verifiedVisitor);
+   }
+
+   @Override
+   public List<VisitorLog> getVisitorLogsBySociety(String email) {
+      Security security = securityRepository.getSecurityByEmail(email).get(0);
+      String society = security.getSociety();
+      return visitorLogRepository.getVisitorLogsBySociety(society);
    }
 
    @Override

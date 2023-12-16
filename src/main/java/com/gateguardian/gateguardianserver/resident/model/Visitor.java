@@ -48,18 +48,6 @@ public class Visitor {
       this.otp = otp;
    }
 
-//   public Visitor(Integer visitorId, String name, String phoneNo, String hostEmail, Integer hostFlat, String hostBuilding, String society, String uid, String otp) {
-//      this.visitorId = visitorId;
-//      this.name = name;
-//      this.phoneNo = phoneNo;
-//      this.hostEmail = hostEmail;
-//      this.hostFlat = hostFlat;
-//      this.hostBuilding = hostBuilding;
-//      this.society = society;
-//      this.uid = uid;
-//      this.otp = otp;
-//   }
-
    public Integer getVisitorId() { return visitorId; }
    public void setVisitorId(Integer visitorId) { this.visitorId = visitorId; }
 

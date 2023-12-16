@@ -3,6 +3,7 @@ package com.gateguardian.gateguardianserver.security.controller;
 import com.gateguardian.gateguardianserver.resident.model.Visitor;
 import com.gateguardian.gateguardianserver.security.SecurityDto;
 import com.gateguardian.gateguardianserver.security.model.Security;
+import com.gateguardian.gateguardianserver.security.model.VisitorLog;
 import com.gateguardian.gateguardianserver.security.service.SecurityService;
 import com.gateguardian.gateguardianserver.security.service.VisitorLogService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,21 @@ public class SecurityApiController {
       return securityService.getVisitorsBySociety(email);
    }
 
+   @DeleteMapping("/visitor-verified")
+   public void deleteVerifiedVisitor(
+           @RequestParam(name = "id") Integer visitorId
+   ) {
+      securityService.moveVerifiedVisitorToLogs(visitorId);
+   }
+
+
+   @GetMapping("/visitor-logs")
+   public List<VisitorLog> getVisitorLogs(
+           @RequestParam(name = "email") String email
+   ) {
+      return securityService.getVisitorLogsBySociety(email);
+   }
+
 
    @PutMapping("/update-security-pfp")
    public void updateSecurityPfp(
@@ -43,7 +59,7 @@ public class SecurityApiController {
       securityService.updateSecurityPfp(email, pfpUrl);
    }
 
-   @PutMapping("update-security-profile")
+   @PutMapping("/update-security-profile")
    public void updateSecurityProfile(
            @RequestParam(name = "email") String email,
            @RequestParam(name = "name") String name,
