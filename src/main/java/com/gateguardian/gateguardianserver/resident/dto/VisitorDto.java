@@ -4,15 +4,15 @@ public class VisitorDto {
    private Integer visitorId;
    private String name;
    private String phoneNo;
-   private String residentEmail;
+   private String hostEmail;
 
    public VisitorDto() {}
 
-   public VisitorDto(Integer visitorId, String name, String phoneNo, String residentEmail) {
+   public VisitorDto(Integer visitorId, String name, String phoneNo, String hostEmail) {
       this.visitorId = visitorId;
       this.name = name;
       this.phoneNo = phoneNo;
-      this.residentEmail = residentEmail;
+      this.hostEmail = hostEmail;
    }
 
    public Integer getVisitorId() { return visitorId; }
@@ -24,6 +24,6 @@ public class VisitorDto {
    public String getPhoneNo() { return phoneNo; }
    public void setPhoneNo(String phoneNo) { this.phoneNo = phoneNo; }
 
-   public String getResidentEmail() { return residentEmail; }
-   public void setResidentEmail(String residentEmail) { this.residentEmail = residentEmail; }
+   public String getHostEmail() { return hostEmail; }
+   public void setHostEmail(String hostEmail) { this.hostEmail = hostEmail; }
 }

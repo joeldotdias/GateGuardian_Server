@@ -30,10 +30,9 @@ public class VisitorServiceImpl implements VisitorService {
    @Override
    public void saveVisitor(VisitorDto visitorDto) {
       String visitorUid = UUID.randomUUID().toString().substring(0,6).toUpperCase();
-      //String generatedOtp = UUID.randomUUID().toString().substring(0,6).toUpperCase();
       String generatedOtp = Integer.toString((int)(Math.random() * 900000) + 100000);
-      Resident resident = residentRepository.getResidentByEmail(visitorDto.getResidentEmail()).get(0);
-      Visitor visitor = new Visitor(visitorDto.getName(), visitorDto.getPhoneNo(), visitorDto.getResidentEmail(), resident.getFlatNo(), resident.getBuilding(), resident.getSociety(), visitorUid, generatedOtp);
+      Resident resident = residentRepository.getResidentByEmail(visitorDto.getHostEmail()).get(0);
+      Visitor visitor = new Visitor(visitorDto.getName(), visitorDto.getPhoneNo(), visitorDto.getHostEmail(), resident.getFlatNo(), resident.getBuilding(), resident.getSociety(), visitorUid, generatedOtp);
       visitorRepository.save(visitor);
    }
 

@@ -88,6 +88,7 @@ public class ResidentApiController {
            @RequestBody VisitorDto visitorDto
    ) {
       visitorService.saveVisitor(visitorDto);
+      System.out.println(visitorDto.toString());
    }
 
    @GetMapping("/visitor-recent")
