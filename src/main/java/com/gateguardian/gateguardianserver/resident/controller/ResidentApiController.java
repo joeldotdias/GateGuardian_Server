@@ -1,7 +1,6 @@
 package com.gateguardian.gateguardianserver.resident.controller;
 
 import com.gateguardian.gateguardianserver.resident.dto.ResidentDto;
-import com.gateguardian.gateguardianserver.resident.dto.VisitorCredDto;
 import com.gateguardian.gateguardianserver.resident.dto.VisitorDto;
 import com.gateguardian.gateguardianserver.resident.model.EventMemory;
 import com.gateguardian.gateguardianserver.resident.model.Resident;
@@ -97,13 +96,6 @@ public class ResidentApiController {
    ) {
       return visitorService.getRecentVisitorOtp(email);
    }
-
-//   @GetMapping("/visitor-recento")
-//   public VisitorCredDto getRecentVisitorOtpO(
-//           @RequestParam(name = "email") String email
-//   ) {
-//      return visitorService.getRecentVisitorCred(email);
-//   }
 
    @GetMapping("/visitor-otp")
    public String getVisitorOtp(

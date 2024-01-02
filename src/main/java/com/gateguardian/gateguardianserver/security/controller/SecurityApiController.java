@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/security")
 public class SecurityApiController {
 
    @Autowired
@@ -20,7 +21,7 @@ public class SecurityApiController {
    @Autowired
    private VisitorLogService visitorLogService;
 
-   @GetMapping("/security")
+   @GetMapping("/sign-in")
    public Security getSecurityByEmail(
            @RequestParam(name = "email") String email
    ) {
@@ -28,7 +29,7 @@ public class SecurityApiController {
    }
 
 
-   @GetMapping("/visitors-for")
+   @GetMapping("/visitors")
    public List<Visitor> getVisitorBySociety(
            @RequestParam(name = "email") String email
    ) {
@@ -51,7 +52,7 @@ public class SecurityApiController {
    }
 
 
-   @PutMapping("/update-security-pfp")
+   @PutMapping("/update-pfp")
    public void updateSecurityPfp(
            @RequestParam(name = "email") String email,
            @RequestParam(name = "pfpUrl") String pfpUrl
@@ -59,7 +60,7 @@ public class SecurityApiController {
       securityService.updateSecurityPfp(email, pfpUrl);
    }
 
-   @PutMapping("/update-security-profile")
+   @PutMapping("/update-profile")
    public void updateSecurityProfile(
            @RequestParam(name = "email") String email,
            @RequestParam(name = "name") String name,
@@ -76,7 +77,7 @@ public class SecurityApiController {
       return securityService.getSecurityBySociety(adminEmail);
    }
 
-   @PostMapping("/security-save")
+   @PostMapping("/save")
    public void saveSecurity(
            @RequestParam(name = "name") String name,
            @RequestParam(name = "email") String email,
