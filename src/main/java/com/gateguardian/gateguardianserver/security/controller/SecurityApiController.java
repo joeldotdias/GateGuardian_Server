@@ -1,7 +1,6 @@
 package com.gateguardian.gateguardianserver.security.controller;
 
 import com.gateguardian.gateguardianserver.resident.model.Visitor;
-import com.gateguardian.gateguardianserver.security.SecurityDto;
 import com.gateguardian.gateguardianserver.security.model.Security;
 import com.gateguardian.gateguardianserver.security.model.VisitorLog;
 import com.gateguardian.gateguardianserver.security.service.SecurityService;
@@ -70,19 +69,19 @@ public class SecurityApiController {
       securityService.updateSecurityProfile(email, name, badgeId, phoneNo);
    }
 
-   @GetMapping("/securities")
-   public List<SecurityDto> getSecuritiesBySociety(
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      return securityService.getSecurityBySociety(adminEmail);
-   }
-
-   @PostMapping("/save")
-   public void saveSecurity(
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      securityService.saveSecurity(name, email, adminEmail);
-   }
+//   @GetMapping("/securities")
+//   public List<SecurityDto> getSecuritiesBySociety(
+//           @RequestParam(name = "admin") String adminEmail
+//   ) {
+//      return securityService.getSecurityBySociety(adminEmail);
+//   }
+//
+//   @PostMapping("/save")
+//   public void saveSecurity(
+//           @RequestParam(name = "name") String name,
+//           @RequestParam(name = "email") String email,
+//           @RequestParam(name = "admin") String adminEmail
+//   ) {
+//      securityService.saveSecurity(name, email, adminEmail);
+//   }
 }

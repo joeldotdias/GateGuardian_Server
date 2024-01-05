@@ -8,6 +8,8 @@ import com.gateguardian.gateguardianserver.resident.model.Visitor;
 import com.gateguardian.gateguardianserver.resident.service.EventMemoryService;
 import com.gateguardian.gateguardianserver.resident.service.ResidentService;
 import com.gateguardian.gateguardianserver.resident.service.VisitorService;
+import com.gateguardian.gateguardianserver.security.SecurityDto;
+import com.gateguardian.gateguardianserver.security.service.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,9 @@ public class ResidentApiController {
    @Autowired
    private EventMemoryService eventMemoryService;
 
+   @Autowired
+   private SecurityService securityService;
+
    @GetMapping("/resident")
    public Resident getResidentByEmail(
            @RequestParam(name = "email") String email
@@ -36,6 +41,22 @@ public class ResidentApiController {
            @RequestParam(name = "admin") String adminEmail
    ) {
       return residentService.getResidentsBySociety(adminEmail);
+   }
+
+   @GetMapping("/securities")
+   public List<SecurityDto> getSecuritiesBySociety(
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      return securityService.getSecurityBySociety(adminEmail);
+   }
+
+   @PostMapping("/save")
+   public void saveSecurity(
+           @RequestParam(name = "name") String name,
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      securityService.saveSecurity(name, email, adminEmail);
    }
 
    @PutMapping("/update-pfp")
