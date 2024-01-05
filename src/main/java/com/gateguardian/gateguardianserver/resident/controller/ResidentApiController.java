@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/resident")
 public class ResidentApiController {
    @Autowired
    private ResidentService residentService;
@@ -29,36 +30,14 @@ public class ResidentApiController {
    @Autowired
    private SecurityService securityService;
 
-   @GetMapping("/resident")
+   @GetMapping("/sign-in")
    public Resident getResidentByEmail(
            @RequestParam(name = "email") String email
    ) {
       return residentService.getResidentByEmail(email);
    }
 
-   @GetMapping("/residents")
-   public List<ResidentDto> getResidentBySociety(
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      return residentService.getResidentsBySociety(adminEmail);
-   }
-
-   @GetMapping("/securities")
-   public List<SecurityDto> getSecuritiesBySociety(
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      return securityService.getSecurityBySociety(adminEmail);
-   }
-
-   @PostMapping("/save")
-   public void saveSecurity(
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      securityService.saveSecurity(name, email, adminEmail);
-   }
-
+   // Profile
    @PutMapping("/update-pfp")
    public void updateResidentPfp(
            @RequestParam(name = "email") String email,
@@ -67,16 +46,7 @@ public class ResidentApiController {
       residentService.updateResidentPfp(email, pfpUrl);
    }
 
-   @PostMapping("/resident-save")
-   public void saveResident(
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "admin") String adminEmail
-   ) {
-      residentService.saveResident(name, email, adminEmail);
-   }
-
-   @PostMapping("/resident-home")
+   @PutMapping("/update-home")
    public void saveResidentHomeDetails(
            @RequestParam(name = "flat") Integer flat,
            @RequestParam(name = "building") String building,
@@ -95,7 +65,14 @@ public class ResidentApiController {
       residentService.updateResidentProfile(email, name, aboutMe, phoneNo);
    }
 
+   @GetMapping("/memories")
+   public List<EventMemory> getEventMemoriesByResident(
+           @RequestParam(name = "email") String email
+   ) {
+      return eventMemoryService.getEventMemoriesByResident(email);
+   }
 
+   // Visitors
    @GetMapping("/visitors")
    public List<Visitor> getVisitorsByResidentEmail(
            @RequestParam(name = "email") String email
@@ -126,10 +103,36 @@ public class ResidentApiController {
    }
 
 
-   @GetMapping("/resident-memories")
-   public List<EventMemory> getEventMemoriesByResident(
-           @RequestParam(name = "email") String email
+   // Admin
+   @GetMapping("/admin/residents")
+   public List<ResidentDto> getResidentBySociety(
+           @RequestParam(name = "admin") String adminEmail
    ) {
-      return eventMemoryService.getEventMemoriesByResident(email);
+      return residentService.getResidentsBySociety(adminEmail);
+   }
+
+   @PostMapping("/admin/save-resident")
+   public void saveResident(
+           @RequestParam(name = "name") String name,
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      residentService.saveResident(name, email, adminEmail);
+   }
+
+   @GetMapping("/admin/securities")
+   public List<SecurityDto> getSecuritiesBySociety(
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      return securityService.getSecurityBySociety(adminEmail);
+   }
+
+   @PostMapping("/admin/save-security")
+   public void saveSecurity(
+           @RequestParam(name = "name") String name,
+           @RequestParam(name = "email") String email,
+           @RequestParam(name = "admin") String adminEmail
+   ) {
+      securityService.saveSecurity(name, email, adminEmail);
    }
 }
