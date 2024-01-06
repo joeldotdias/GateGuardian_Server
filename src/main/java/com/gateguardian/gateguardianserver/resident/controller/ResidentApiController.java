@@ -32,7 +32,7 @@ public class ResidentApiController {
 
    @GetMapping("/sign-in")
    public Resident getResidentByEmail(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return residentService.getResidentByEmail(email);
    }
@@ -40,34 +40,34 @@ public class ResidentApiController {
    // Profile
    @PutMapping("/update-pfp")
    public void updateResidentPfp(
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "pfpUrl") String pfpUrl
+           @RequestHeader("email") String email,
+           @RequestParam("pfpUrl") String pfpUrl
    ) {
       residentService.updateResidentPfp(email, pfpUrl);
    }
 
    @PutMapping("/update-home")
    public void saveResidentHomeDetails(
-           @RequestParam(name = "flat") Integer flat,
-           @RequestParam(name = "building") String building,
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email,
+           @RequestParam("flat") Integer flat,
+           @RequestParam("building") String building
    ) {
       residentService.saveResidentHomeDetails(flat, building, email);
    }
 
    @PutMapping("/update-profile")
    public void updateResidentProfile(
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "aboutMe") String aboutMe,
-           @RequestParam(name = "phoneNo") String phoneNo
+           @RequestHeader("email") String email,
+           @RequestParam("name") String name,
+           @RequestParam("aboutMe") String aboutMe,
+           @RequestParam("phoneNo") String phoneNo
    ) {
       residentService.updateResidentProfile(email, name, aboutMe, phoneNo);
    }
 
    @GetMapping("/memories")
    public List<EventMemory> getEventMemoriesByResident(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return eventMemoryService.getEventMemoriesByResident(email);
    }
@@ -75,7 +75,7 @@ public class ResidentApiController {
    // Visitors
    @GetMapping("/visitors")
    public List<Visitor> getVisitorsByResidentEmail(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return visitorService.getVisitorsByEmail(email);
    }
@@ -90,7 +90,7 @@ public class ResidentApiController {
 
    @GetMapping("/visitor-recent")
    public String getRecentVisitorOtp(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return visitorService.getRecentVisitorOtp(email);
    }
@@ -106,32 +106,32 @@ public class ResidentApiController {
    // Admin
    @GetMapping("/admin/residents")
    public List<ResidentDto> getResidentBySociety(
-           @RequestParam(name = "admin") String adminEmail
+           @RequestHeader("admin") String adminEmail
    ) {
       return residentService.getResidentsBySociety(adminEmail);
    }
 
    @PostMapping("/admin/save-resident")
    public void saveResident(
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "admin") String adminEmail
+           @RequestHeader("admin") String adminEmail,
+           @RequestParam("name") String name,
+           @RequestParam("email") String email
    ) {
       residentService.saveResident(name, email, adminEmail);
    }
 
    @GetMapping("/admin/securities")
    public List<SecurityDto> getSecuritiesBySociety(
-           @RequestParam(name = "admin") String adminEmail
+           @RequestHeader("admin") String adminEmail
    ) {
       return securityService.getSecurityBySociety(adminEmail);
    }
 
    @PostMapping("/admin/save-security")
    public void saveSecurity(
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "admin") String adminEmail
+           @RequestHeader("admin") String adminEmail,
+           @RequestParam("name") String name,
+           @RequestParam("email") String email
    ) {
       securityService.saveSecurity(name, email, adminEmail);
    }

@@ -22,7 +22,7 @@ public class SecurityApiController {
 
    @GetMapping("/sign-in")
    public Security getSecurityByEmail(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return securityService.getSecurityByEmail(email);
    }
@@ -30,14 +30,14 @@ public class SecurityApiController {
 
    @GetMapping("/visitors")
    public List<Visitor> getVisitorBySociety(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return securityService.getVisitorsBySociety(email);
    }
 
    @DeleteMapping("/visitor-verified")
    public void deleteVerifiedVisitor(
-           @RequestParam(name = "id") Integer visitorId
+           @RequestParam("id") Integer visitorId
    ) {
       securityService.moveVerifiedVisitorToLogs(visitorId);
    }
@@ -45,7 +45,7 @@ public class SecurityApiController {
 
    @GetMapping("/visitor-logs")
    public List<VisitorLog> getVisitorLogs(
-           @RequestParam(name = "email") String email
+           @RequestHeader("email") String email
    ) {
       return securityService.getVisitorLogsBySociety(email);
    }
@@ -53,35 +53,19 @@ public class SecurityApiController {
 
    @PutMapping("/update-pfp")
    public void updateSecurityPfp(
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "pfpUrl") String pfpUrl
+           @RequestHeader("email") String email,
+           @RequestParam("pfpUrl") String pfpUrl
    ) {
       securityService.updateSecurityPfp(email, pfpUrl);
    }
 
    @PutMapping("/update-profile")
    public void updateSecurityProfile(
-           @RequestParam(name = "email") String email,
-           @RequestParam(name = "name") String name,
-           @RequestParam(name = "badgeId") String badgeId,
-           @RequestParam(name = "phoneNo") String phoneNo
+           @RequestHeader("email") String email,
+           @RequestParam("name") String name,
+           @RequestParam("badgeId") String badgeId,
+           @RequestParam("phoneNo") String phoneNo
    ) {
       securityService.updateSecurityProfile(email, name, badgeId, phoneNo);
    }
-
-//   @GetMapping("/securities")
-//   public List<SecurityDto> getSecuritiesBySociety(
-//           @RequestParam(name = "admin") String adminEmail
-//   ) {
-//      return securityService.getSecurityBySociety(adminEmail);
-//   }
-//
-//   @PostMapping("/save")
-//   public void saveSecurity(
-//           @RequestParam(name = "name") String name,
-//           @RequestParam(name = "email") String email,
-//           @RequestParam(name = "admin") String adminEmail
-//   ) {
-//      securityService.saveSecurity(name, email, adminEmail);
-//   }
 }

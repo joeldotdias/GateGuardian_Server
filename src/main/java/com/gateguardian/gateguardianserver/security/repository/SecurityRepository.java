@@ -1,5 +1,6 @@
 package com.gateguardian.gateguardianserver.security.repository;
 
+import com.gateguardian.gateguardianserver.security.SecurityDto;
 import com.gateguardian.gateguardianserver.security.model.Security;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
