@@ -10,18 +10,9 @@ use serde_json::json;
 use sqlx::Row;
 
 use crate::{
-    schema::CreateUserSchema,
+    schema::{ParamOptions, CreateUserSchema},
     AppState,
 };
-
-use super::schema::ParamOptions;
-pub async fn health_checker() -> impl IntoResponse {
-    let json_response = serde_json::json!({
-        "status": "foo",
-        "message": "bar"
-    });
-    Json(json_response)
-}
 
 pub async fn get_user(
     State(data): State<Arc<AppState>>,
@@ -34,9 +25,10 @@ pub async fn get_user(
         .await {   
             Ok(row) => row,
             Err(err) => {
+                println!("Some db problem {}", err);
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR, 
-                    "OOPs"
+                    "OOPSIE"
                 )
                 .into_response()
             }
@@ -51,4 +43,35 @@ pub async fn get_user(
     });
 
     (axum::http::StatusCode::OK, Json(user_response)).into_response()
+}
+
+pub async fn create_user(
+    State(data): State<Arc<AppState>>,
+    Json(payload): Json<CreateUserSchema>
+) -> impl IntoResponse {
+    let query_result = 
+        sqlx::query(r#"INSERT INTO users (name, email, society, category) VALUES (?, ?, ?, ?)"#)
+            .bind(payload.name.to_string())
+            .bind(payload.email.to_string())
+            .bind(payload.society.to_string())
+            .bind(payload.category.to_string())
+            .execute(&data.db)
+            .await;
+
+    if query_result.is_ok() {
+        return (
+            axum::http::StatusCode::OK,
+            Json(json!({
+                "message": "User created successfully"
+            })
+        )).into_response();
+    } else {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            Json(json!({
+                "err": "Could not create user"
+            })
+        )).into_response();
+    }
+    
 }

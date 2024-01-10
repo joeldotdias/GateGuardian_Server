@@ -7,15 +7,15 @@ use axum::{
 
 use crate::{
     handlers::{
-        health_checker,
-        get_user
+        get_user,
+        create_user
     },
     AppState,
 };
 
-pub fn create_router(app_state: Arc<AppState>) -> Router {
+pub fn provide_user_routes(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/healthchecker", get(health_checker))
         .route("/user", get(get_user))
+        .route("/user-save", post(create_user))
         .with_state(app_state)
 }
