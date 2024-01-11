@@ -12,7 +12,7 @@ pub async fn db_connection(database_url: &str) -> Pool<MySql>{
                 pool
             }
             Err(err) => {
-                println!("Data Be Soy: {}", err);
+                dbg!("Data Be Soy: {}", err);
                 std::process::exit(1);
             }  
     };

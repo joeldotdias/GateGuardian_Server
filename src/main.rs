@@ -7,7 +7,7 @@ mod config;
 mod router;
 
 mod user;
-use user::{ schema, handlers };
+mod resident;
 
 pub struct AppState {
     db: Pool<MySql>
@@ -22,6 +22,6 @@ async fn main() {
 
     let app = router::create_router(Arc::new(AppState { db: pool.clone() })).await;
 
-    let listener = tokio::net::TcpListener::bind(&config.addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&config.socket_addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }

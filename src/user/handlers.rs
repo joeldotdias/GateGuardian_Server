@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Query, State},
+    extract::{ Query, State },
     http::StatusCode,
     response::IntoResponse,
     Json
@@ -10,14 +10,15 @@ use serde_json::json;
 use sqlx::Row;
 
 use crate::{
-    schema::{ParamOptions, CreateUserSchema},
     AppState,
+    user::schema::{ CreateUserSchema, GetUserParams }
 };
 
 pub async fn get_user(
     State(data): State<Arc<AppState>>,
-    Query(params): Query<ParamOptions>,
+    Query(params): Query<GetUserParams>,
 ) -> impl IntoResponse {
+    
     let query = format!("SELECT * FROM users WHERE email = '{}'",params.email);
 
     let user = match sqlx::query(&query)
@@ -49,6 +50,7 @@ pub async fn create_user(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<CreateUserSchema>
 ) -> impl IntoResponse {
+    
     let query_result = 
         sqlx::query(r#"INSERT INTO users (name, email, society, category) VALUES (?, ?, ?, ?)"#)
             .bind(payload.name.to_string())
@@ -60,17 +62,17 @@ pub async fn create_user(
 
     if query_result.is_ok() {
         return (
-            axum::http::StatusCode::OK,
+            axum::http::StatusCode::CREATED,
             Json(json!({
                 "message": "User created successfully"
-            })
-        )).into_response();
+            }))
+        ).into_response();
     } else {
         return (
             axum::http::StatusCode::BAD_REQUEST,
             Json(json!({
                 "err": "Could not create user"
-            })
-        )).into_response();
+            }))
+        ).into_response();
     }
 }
