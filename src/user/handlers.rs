@@ -73,5 +73,4 @@ pub async fn create_user(
             })
         )).into_response();
     }
-    
 }
