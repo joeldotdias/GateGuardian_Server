@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{ Query, State },
-    http::{ header::HeaderMap, StatusCode },
+    http::header::HeaderMap,
     response::IntoResponse,
     Json
 };
@@ -12,7 +12,10 @@ use sqlx::Row;
 
 use crate::{
     AppState,
-    resident::schema::UpdatePfpParams,
+    resident::{
+        model::Resident,
+        schema::UpdatePfpParams
+    },
 };
 
 // App entry
@@ -23,33 +26,24 @@ pub async fn get_resident_by_email(
     
     let query = format!("SELECT * FROM residents WHERE email = {:?}", headers.get("email").unwrap());
 
-    let resident = match sqlx::query(&query)
+    let query_result = sqlx::query_as::<_, Resident>(&query)
         .fetch_one(&data.db)
-        .await {
-            Ok(row) => row,
-            Err(err) => {
-                dbg!("Couldn't read data {}", err);
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "WHOOPS"
-                )
-                .into_response();
-            }
-    };
+        .await;
 
-    let resident_response = json!({
-        "residentId": resident.try_get::<i64, _>("resident_id").unwrap_or_default(),
-        "name": resident.try_get::<String, _>("name").unwrap_or_default(),
-        "email": resident.try_get::<String, _>("email").unwrap_or_default(),
-        "pfpUrl": resident.try_get::<String, _>("pfp_url").unwrap_or_default(),
-        "aboutMe": resident.try_get::<String, _>("about_me").unwrap_or_default(),
-        "phoneNo": resident.try_get::<String, _>("phone_no").unwrap_or_default(),
-        "flatNo": resident.try_get::<i32, _>("flat_no").unwrap_or_default(),
-        "building": resident.try_get::<String, _>("building").unwrap_or_default(),
-        "society": resident.try_get::<String, _>("society").unwrap_or_default()
-    });      
-    
-    (axum::http::StatusCode::OK, Json(resident_response)).into_response()
+    match query_result {
+        Ok(resident) => {
+            return (axum::http::StatusCode::OK, Json(resident)).into_response();
+        }
+        Err(err) => {
+            dbg!("Error: {}", err);
+            return(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "err": "Could not fetch resident data"
+                }))
+            ).into_response();
+        }     
+    };
 }
 
 
@@ -64,7 +58,7 @@ pub async fn update_resident_pfp(
             UPDATE residents
             SET pfp_url = '{}' 
             WHERE email = {:?}
-        ", params.pfp_url.to_string(), headers.get("email").unwrap());
+        ", params.pfpUrl.to_string(), headers.get("email").unwrap());
     
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -104,7 +98,7 @@ pub async fn get_visitors(
             Err(err) => {
                 dbg!("Couldn't read data {}", err);
                 return (
-                    StatusCode::BAD_REQUEST,
+                    axum::http::StatusCode::BAD_REQUEST,
                     "WHOOPS"
                 ).into_response();
             }
@@ -118,9 +112,6 @@ pub async fn get_visitors(
                 "name": row.try_get::<String, _>("name").unwrap_or_default(),
                 "phoneNo": row.try_get::<String, _>("phone_no").unwrap_or_default(),
                 "hostEmail": row.try_get::<String, _>("host_email").unwrap_or_default(),
-                "hostFlat": row.try_get::<i32, _>("host_flat").unwrap_or_default(),
-                "hostBuilding": row.try_get::<String, _>("host_building").unwrap_or_default(),
-                "society": row.try_get::<String, _>("host_society").unwrap_or_default(),
                 "otp": row.try_get::<String, _>("otp").unwrap_or_default()
             })
         }).collect();

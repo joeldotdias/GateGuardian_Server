@@ -1,11 +1,14 @@
 use serde::{ Serialize, Deserialize};
 
 #[derive(Deserialize, Debug)]
+pub struct SaveResidentHomeSchema {
+    pub flat: i64,
+    pub building: String
+}
+
+#[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
-pub struct ParamOptions {
-    pub pfp_url: String,
-    pub flat: String,
-    pub building: String,
+pub struct UpdateResidentProfileSchema {
     pub name: String,
     pub aboutMe: String,
     pub phoneNo: String
@@ -14,5 +17,12 @@ pub struct ParamOptions {
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct UpdatePfpParams {
-    pub pfp_url: String
+    pub pfpUrl: String
+}
+
+#[derive(Deserialize, Debug)]
+#[allow(non_snake_case)]
+pub struct SavePersonSchema {
+    pub name: String,
+    pub email: String
 }
