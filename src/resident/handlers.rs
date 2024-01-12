@@ -8,13 +8,12 @@ use axum::{
 };
 
 use serde_json::json;
-use sqlx::Row;
 
 use crate::{
     AppState,
     resident::{
         model::Resident,
-        schema::UpdatePfpParams
+        schema::{ UpdatePfpParams, VisitorResidentDto }
     },
 };
 
@@ -91,30 +90,23 @@ pub async fn get_visitors(
 
     let query = format!("SELECT * FROM visitors WHERE host_email = {:?}", headers.get("email").unwrap());
 
-    let query_result = match sqlx::query(&query)
+    let query_result = sqlx::query_as::<_, VisitorResidentDto>(&query)
         .fetch_all(&data.db)
-        .await {
-            Ok(rows) => rows,
-            Err(err) => {
-                dbg!("Couldn't read data {}", err);
-                return (
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "WHOOPS"
-                ).into_response();
-            }
-        };
-
-    let visitors: Vec<serde_json::Value> = query_result
-        .into_iter()
-        .map(|row| {
-            json!({
-                "visitorId": row.try_get::<i64, _>("visitor_id").unwrap_or_default(),
-                "name": row.try_get::<String, _>("name").unwrap_or_default(),
-                "phoneNo": row.try_get::<String, _>("phone_no").unwrap_or_default(),
-                "hostEmail": row.try_get::<String, _>("host_email").unwrap_or_default(),
-                "otp": row.try_get::<String, _>("otp").unwrap_or_default()
-            })
-        }).collect();
+        .await;
     
-    (axum::http::StatusCode::OK, Json(visitors)).into_response()
+    match query_result {
+        Ok(rows) => {
+            return(
+                axum::http::StatusCode::OK,
+                Json(rows)
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("Couldn't read data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                "WHOOPS"
+            ).into_response();
+        }
+    };
 }

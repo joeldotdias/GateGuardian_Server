@@ -1,4 +1,5 @@
 use serde::{ Serialize, Deserialize};
+use sqlx::FromRow;
 
 #[derive(Deserialize, Debug)]
 pub struct SaveResidentHomeSchema {
@@ -25,4 +26,16 @@ pub struct UpdatePfpParams {
 pub struct SavePersonSchema {
     pub name: String,
     pub email: String
+}
+
+#[derive(Serialize, Debug, FromRow)]
+pub struct VisitorResidentDto {
+    #[serde(rename="visitorId")]
+    pub visitor_id: i32,
+    pub name: String,
+    #[serde(rename="phoneNo")]
+    pub phone_no: String,
+    #[serde(rename="hostEmail")]
+    pub host_email: String,
+    pub otp: String
 }

@@ -23,13 +23,6 @@ pub async fn get_user(
     
     let query = format!("SELECT * FROM users WHERE email = '{}'",params.email);
 
-    // let user_response = json!({
-    //     "id": user.try_get::<i64, _>("id").unwrap_or_default(),
-    //     "name": user.try_get::<String, _>("name").unwrap_or_default(),
-    //     "email": user.try_get::<String, _>("email").unwrap_or_default(),
-    //     "category": user.try_get::<String, _>("category").unwrap_or_default(),
-    //     "society": user.try_get::<String, _>("society").unwrap_or_default()
-    // });
     let query_result = sqlx::query_as::<_, User>(&query)
         .fetch_one(&data.db)
         .await;

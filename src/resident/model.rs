@@ -18,4 +18,3 @@ pub struct Resident {
     pub building: String,
     pub society: String
 }
-
