@@ -17,6 +17,7 @@ use crate::{
     },
 };
 
+
 // App entry
 pub async fn get_resident_by_email(
     State(data): State<Arc<AppState>>,
@@ -47,6 +48,13 @@ pub async fn get_resident_by_email(
 
 
 // Profile
+pub async fn add_resident_home_details(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+    
+}
+
 pub async fn update_resident_pfp(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap,
@@ -56,6 +64,7 @@ pub async fn update_resident_pfp(
     let query = format!("
             UPDATE residents
             SET pfp_url = '{}' 
+
             WHERE email = {:?}
         ", params.pfpUrl.to_string(), headers.get("email").unwrap());
     

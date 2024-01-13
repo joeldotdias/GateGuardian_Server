@@ -2,8 +2,9 @@ use std::sync::Arc;
 use dotenv::dotenv;
 use sqlx::{ Pool, MySql };
 
-mod database;
 mod config;
+mod database;
+mod middleware;
 mod router;
 
 mod user;
@@ -19,6 +20,11 @@ async fn main() {
     let config = config::Config::env_config();
     
     let pool = database::db_connection(&config.database_url).await;
+
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .compact()
+        .init();
 
     let app = router::create_router(Arc::new(AppState { db: pool.clone() })).await;
 
