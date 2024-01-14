@@ -1,6 +1,6 @@
 pub struct Config {
     pub socket_addr: String,
-    pub database_url: String
+    pub database_url: String,
 }
 
 impl Config {
@@ -9,7 +9,7 @@ impl Config {
             .expect("KINDLY SET THE PORT");
         let database_url = std::env::var("DATABASE_URL")
             .expect("KINDLY SET THE DATABASE URL");
-    
+          
         Config {
             socket_addr,
             database_url

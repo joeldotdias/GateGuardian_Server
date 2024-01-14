@@ -13,6 +13,7 @@ pub fn cors_layer() -> CorsLayer {
 }
 
 pub fn logger()  -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>>{
+    println!("Logs");
     TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new()
             .level(Level::INFO))

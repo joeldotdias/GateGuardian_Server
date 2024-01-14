@@ -23,6 +23,7 @@ pub async fn get_resident_by_email(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
+
     
     let query = format!("SELECT * FROM residents WHERE email = {:?}", headers.get("email").unwrap());
 
