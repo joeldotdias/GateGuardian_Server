@@ -39,3 +39,19 @@ pub struct VisitorResidentDto {
     pub host_email: String,
     pub otp: String
 }
+
+#[derive(Serialize, Deserialize, Debug, FromRow)]
+pub struct SaveVisitorSchema {
+    pub name: String,
+    #[serde(rename="phoneNo")]
+    pub phone_no: String,
+    #[serde(rename="hostEmail")]
+    pub host_email: String
+}
+
+#[derive(Serialize, Deserialize, Debug, FromRow)]
+pub struct ResidentDetailsSchema {
+    pub flat_no: i32,
+    pub building: String,
+    pub society: String
+}
