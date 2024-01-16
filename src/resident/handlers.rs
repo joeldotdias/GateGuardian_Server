@@ -15,7 +15,7 @@ use crate::{
     AppState,
     resident::{
         model::Resident,
-        schema::{ AddHomeDetailsSchema, UpdatePfpParams, VisitorResidentDto, SaveVisitorSchema, ResidentDetailsSchema }
+        schema::{ AddHomeDetailsSchema, UpdatePfpParams, VisitorResidentDto, SaveVisitorSchema, ResidentDetailsSchema, AdminResidentDto }
     },
 };
 
@@ -201,8 +201,6 @@ pub async fn save_visitor(
     let resident_details_query_result = sqlx::query_as::<_, ResidentDetailsSchema>(&resident_details_query)
         .fetch_one(&data.db)
         .await;
-
-    
     
     match resident_details_query_result {
         Ok(details) => {
@@ -277,4 +275,51 @@ pub async fn get_recent_visitor_otp(
                 ).into_response();
             }
         };
+}
+
+
+// Admin
+pub async fn get_resident_by_society(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+    
+    let society_query = format!("SELECT society FROM users WHERE email = {:?}", headers.get("admin").unwrap());
+    
+    let society_query_result = sqlx::query(&society_query)
+        .fetch_one(&data.db)
+        .await;
+
+    let society = match society_query_result {
+        Ok(row) => row.try_get::<String, _>("society").unwrap_or_default(),
+        Err(err) => {
+            dbg!("Couldn't read data {}", err);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "WHOOPS"
+            ).into_response();
+        }
+    };
+
+    let residents_query = format!("SELECT name, email, flat_no, building FROM residents WHERE society = {:?}", society);
+
+    let resident_query_result = sqlx::query_as::<_, AdminResidentDto>(&residents_query)
+        .fetch_all(&data.db)
+        .await;
+
+    match resident_query_result {
+        Ok(rows) => {
+            return (
+                axum::http::StatusCode::OK,
+                Json(rows)
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("Couldn't read data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                "WHOOPS"
+            ).into_response();
+        }
+    }
 }

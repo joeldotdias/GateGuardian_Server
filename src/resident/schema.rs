@@ -58,3 +58,13 @@ pub struct SavePersonSchema {
     pub name: String,
     pub email: String
 }
+
+#[derive(Debug, FromRow, Deserialize, Serialize)]
+#[allow(non_snake_case)]
+pub struct AdminResidentDto {
+    pub name: String,
+    pub email: String,
+    #[serde(rename= "flatNo")]
+    pub flat_no: i32,
+    pub building: String
+}
