@@ -15,9 +15,11 @@ use crate::{
     AppState,
     resident::{
         model::Resident,
-        schema::{ UpdatePfpParams, VisitorResidentDto, SaveVisitorSchema, ResidentDetailsSchema }
+        schema::{ AddHomeDetailsSchema, UpdatePfpParams, VisitorResidentDto, SaveVisitorSchema, ResidentDetailsSchema }
     },
 };
+
+use super::schema::UpdateResidentProfileSchema;
 
 
 // App entry
@@ -53,9 +55,75 @@ pub async fn get_resident_by_email(
 // Profile
 pub async fn add_resident_home_details(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap
+    headers: HeaderMap,
+    Json(payload): Json<AddHomeDetailsSchema>
 ) -> impl IntoResponse {
-    
+
+    let query = format!("
+            UPDATE residents
+            SET flat_no = {}, building = '{}'
+            WHERE email = {:?}
+        ", payload.flat, payload.building, headers.get("email").unwrap());
+
+    let query_result = sqlx::query(&query)
+        .execute(&data.db)
+        .await;
+
+    match query_result {
+        Ok(_) => {
+            (
+                axum::http::StatusCode::OK,
+                Json(json!({
+                    "message": "Home details updated successfully"
+                }))
+            ).into_response()
+        }
+        Err(err) => {
+            dbg!("Could not update profile: {}", err);
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not update home details"
+                }))
+            ).into_response()
+        }
+    }
+}
+
+pub async fn update_resident_profile(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<UpdateResidentProfileSchema>
+) -> impl IntoResponse {
+    let query = format!("
+            UPDATE residents
+            SET name = '{}', about_me = '{}', phone_no = '{}'
+            WHERE email = {:?}
+        ", payload.name, payload.about_me, payload.phone_no, headers.get("email").unwrap());
+
+    let query_result = sqlx::query(&query)
+        .execute(&data.db)
+        .await;
+
+    match query_result {
+        Ok(_) => {
+            (
+                axum::http::StatusCode::OK,
+                Json(json!({
+                    "message": "Profile updated successfully"
+                }))
+            ).into_response()
+        }
+        Err(err) => {
+            dbg!("Could not update profile: {}", err);
+            (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not update pfp"
+                }))
+            ).into_response()
+        }
+    }
 }
 
 pub async fn update_resident_pfp(

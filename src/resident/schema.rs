@@ -2,7 +2,7 @@ use serde::{ Serialize, Deserialize};
 use sqlx::FromRow;
 
 #[derive(Deserialize, Debug)]
-pub struct SaveResidentHomeSchema {
+pub struct AddHomeDetailsSchema {
     pub flat: i64,
     pub building: String
 }
@@ -11,8 +11,10 @@ pub struct SaveResidentHomeSchema {
 #[allow(non_snake_case)]
 pub struct UpdateResidentProfileSchema {
     pub name: String,
-    pub aboutMe: String,
-    pub phoneNo: String
+    #[serde(rename="aboutMe")]
+    pub about_me: String,
+    #[serde(rename="phoneNo")]
+    pub phone_no: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -21,12 +23,6 @@ pub struct UpdatePfpParams {
     pub pfpUrl: String
 }
 
-#[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
-pub struct SavePersonSchema {
-    pub name: String,
-    pub email: String
-}
 
 #[derive(Serialize, Debug, FromRow)]
 pub struct VisitorResidentDto {
@@ -54,4 +50,11 @@ pub struct ResidentDetailsSchema {
     pub flat_no: i32,
     pub building: String,
     pub society: String
+}
+
+
+#[derive(Deserialize, Debug)]
+pub struct SavePersonSchema {
+    pub name: String,
+    pub email: String
 }
