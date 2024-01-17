@@ -8,7 +8,6 @@ pub struct AddHomeDetailsSchema {
 }
 
 #[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
 pub struct UpdateResidentProfileSchema {
     pub name: String,
     #[serde(rename="aboutMe")]
@@ -60,7 +59,6 @@ pub struct SavePersonSchema {
 }
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
-#[allow(non_snake_case)]
 pub struct AdminResidentDto {
     pub name: String,
     pub email: String,

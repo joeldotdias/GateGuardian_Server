@@ -15,11 +15,13 @@ use crate::{
     AppState,
     resident::{
         model::Resident,
-        schema::{ AddHomeDetailsSchema, UpdatePfpParams, VisitorResidentDto, SaveVisitorSchema, ResidentDetailsSchema, AdminResidentDto }
+        schema::{
+            AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
+            VisitorResidentDto, SaveVisitorSchema,
+            ResidentDetailsSchema, AdminResidentDto
+        }
     },
 };
-
-use super::schema::UpdateResidentProfileSchema;
 
 
 // App entry
@@ -142,21 +144,24 @@ pub async fn update_resident_pfp(
         .execute(&data.db)
         .await;
 
-    if query_result.is_err() {
-        dbg!(&query);
-        return (
-            axum::http::StatusCode::BAD_REQUEST,
-            Json(json!({
-                "err": "Could not update pfp"
-            }))
-        ).into_response();
-    } else { 
-        return (
-            axum::http::StatusCode::OK,
-            Json(json!({
-                "message": "Pfp updated successfully"
-            }))
-        ).into_response();
+    match query_result {
+        Ok(_) => {
+            return (
+                axum::http::StatusCode::OK,
+                Json(json!({
+                    "message": "Pfp updated successfully"
+                }))
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("err: {}\nquery:{}", err, &query);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not update pfp"
+                }))
+            ).into_response();
+        }
     }
 }
 

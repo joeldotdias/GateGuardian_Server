@@ -9,6 +9,7 @@ mod router;
 
 mod user;
 mod resident;
+mod security;
 
 pub struct AppState {
     db: Pool<MySql>
