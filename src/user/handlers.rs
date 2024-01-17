@@ -47,29 +47,94 @@ pub async fn create_user(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<CreateUserSchema>
 ) -> impl IntoResponse {
-    
+
+    let name = payload.name.as_str();
+    let email = payload.email.as_str();
+    let society = payload.society.as_str();
+    let category = payload.category.as_str();
+
     let query_result = 
         sqlx::query(r#"INSERT INTO users (name, email, society, category) VALUES (?, ?, ?, ?)"#)
-            .bind(payload.name.to_string())
-            .bind(payload.email.to_string())
-            .bind(payload.society.to_string())
-            .bind(payload.category.to_string())
+            .bind(name)
+            .bind(email)
+            .bind(society)
+            .bind(category)
             .execute(&data.db)
             .await;
-
-    if query_result.is_ok() {
-        return (
-            http::StatusCode::CREATED,
-            Json(json!({
-                "message": "User created successfully"
-            }))
-        ).into_response();
-    } else {
+    
+    if query_result.is_err() {
         return (
             http::StatusCode::BAD_REQUEST,
             Json(json!({
-                "err": "Could not create user"
+                "err": "Failed to register user"
             }))
         ).into_response();
+    }
+
+    match category {
+        "resident" | "admin" => {
+            let add_resident_query = sqlx::query(r#"INSERT INTO residents (name, email, society) VALUES (?, ?, ?)"#)
+                .bind(name)
+                .bind(email)
+                .bind(society)
+                .execute(&data.db)
+                .await;
+
+            match add_resident_query {
+                Ok(_) => {
+                    return (
+                        http::StatusCode::OK,
+                        Json(json!({
+                            "msg": "Resident registered successfully"
+                        }))
+                    ).into_response();
+                }
+                Err(err) => {
+                    dbg!("Could not add resident{}", err);
+                    return (
+                        http::StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "err": "Failed not create user"
+                        }))
+                    ).into_response();
+                }
+            }
+        }
+        "security" => {
+            let add_security_query = sqlx::query(r#"INSERT INTO securities (name, email, society) VALUES (?, ?, ?)"#)
+                .bind(name)
+                .bind(email)
+                .bind(society)
+                .execute(&data.db)
+                .await;
+
+            match add_security_query {
+                Ok(_) => {
+                    return (
+                        http::StatusCode::OK,
+                        Json(json!({
+                            "msg": "Resident registered successfully"
+                        }))
+                    ).into_response();
+                }
+                Err(err) => {
+                    dbg!("Could not add resident{}", err);
+                    return (
+                        http::StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "err": "Failed not create user"
+                        }))
+                    ).into_response();
+                }
+            }
+        }
+        _ => {
+            return (
+                http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Category field did not match any of the available options"
+                }))
+            ).into_response();
+        }
     }
 }
