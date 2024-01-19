@@ -66,3 +66,11 @@ pub struct AdminResidentDto {
     pub flat_no: i32,
     pub building: String
 }
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct AdminSecurityDto {
+    pub name: String,
+    pub email: String,
+    #[serde(rename= "badgeId")]
+    pub badge_id: String
+}

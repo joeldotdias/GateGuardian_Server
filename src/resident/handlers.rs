@@ -18,7 +18,7 @@ use crate::{
         schema::{
             AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
             VisitorResidentDto, SaveVisitorSchema,
-            ResidentDetailsSchema, AdminResidentDto
+            ResidentDetailsSchema, AdminResidentDto, AdminSecurityDto
         }
     },
 };
@@ -284,7 +284,7 @@ pub async fn get_recent_visitor_otp(
 
 
 // Admin
-pub async fn get_resident_by_society(
+pub async fn get_residents_by_society(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
@@ -313,6 +313,51 @@ pub async fn get_resident_by_society(
         .await;
 
     match resident_query_result {
+        Ok(rows) => {
+            return (
+                axum::http::StatusCode::OK,
+                Json(rows)
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("Couldn't read data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                "WHOOPS"
+            ).into_response();
+        }
+    }
+}
+
+pub async fn get_security_by_society(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+    
+    let society_query = format!("SELECT society FROM users WHERE email = {:?}", headers.get("admin").unwrap());
+    
+    let society_query_result = sqlx::query(&society_query)
+        .fetch_one(&data.db)
+        .await;
+
+    let society = match society_query_result {
+        Ok(row) => row.try_get::<String, _>("society").unwrap_or_default(),
+        Err(err) => {
+            dbg!("Couldn't read data {}", err);
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "WHOOPS"
+            ).into_response();
+        }
+    };
+
+    let security_query = format!("SELECT name, email, badge_id FROM securities WHERE society = {:?}", society);
+
+    let security_query_result = sqlx::query_as::<_, AdminSecurityDto>(&security_query)
+        .fetch_all(&data.db)
+        .await;
+
+    match security_query_result {
         Ok(rows) => {
             return (
                 axum::http::StatusCode::OK,

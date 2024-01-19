@@ -13,15 +13,13 @@ use sqlx::Row;
 use crate::{
     AppState,
     security::{
-        model::Security,
+        model::{ Security, VisitorLog },
         schema::{
             UpdateSecurityProfileSchema, UpdatePfpParams,
             VisitorSecurityDto, VerifiedVisitorParams, VerifiedVisitorDetails
         }
     }
 };
-
-use super::model::VisitorLog;
 
 
 // App entry
