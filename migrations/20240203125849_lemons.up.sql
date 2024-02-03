@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS residents(
 CREATE TABLE IF NOT EXISTS securities(
 	security_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
-    phone_no VARCHAR(14),
+    phone_no VARCHAR(15),
     badge_id VARCHAR(255),
     pfp_url VARCHAR(255),
     FOREIGN KEY(user_id) REFERENCES users(user_id)
