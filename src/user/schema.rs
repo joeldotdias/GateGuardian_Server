@@ -1,10 +1,9 @@
-use serde::{ Deserialize, Serialize };
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct CreateUserSchema {
     pub name: String,
     pub email: String,
-    pub society: String,
     pub category: String
 }
 
