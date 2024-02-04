@@ -13,14 +13,11 @@ use sqlx::Row;
 
 use crate::{
     AppState,
-    resident::{
-        model::Resident,
-        schema::{
-            AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
-            VisitorResidentDto, SaveVisitorSchema,
-            ResidentDetailsSchema, AdminResidentDto, AdminSecurityDto
-        }
-    },
+    resident::schema::{
+        ResidentProfileDto, AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
+        VisitorResidentDto, SaveVisitorSchema,
+        ResidentDetailsSchema, AdminResidentDto, AdminSecurityDto
+    }
 };
 
 
@@ -30,29 +27,53 @@ pub async fn get_resident_by_email(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    
-    let query = format!("SELECT * FROM residents WHERE email = {:?}", headers.get("email").unwrap());
+    let email = headers.get("email").unwrap().to_str().unwrap();
 
-    let query_result = sqlx::query_as::<_, Resident>(&query)
+    let society_id_query = format!("SELECT society_id FROM users WHERE email = {:?}", email);
+
+    let society_id = match sqlx::query(&society_id_query)
         .fetch_one(&data.db)
-        .await;
+        .await {
+            Ok(resident) => {
+                resident.try_get::<i32, _>("society_id").unwrap()
+            }
+            Err(err) => {
+                dbg!("Could not find society: {}", err);
+                    return (
+                        axum::http::StatusCode::UNAUTHORIZED,
+                        Json(json!({
+                            "err": "Your society could not be found"
+                        }))
+                    ).into_response();
+            }
+    };
+    
+    let get_resident_query = sqlx::query_as::<_, ResidentProfileDto>("
+        SELECT u.name, r.pfp_url, r.about_me, r.phone_no, r.flat_no, r.building, s.society_name AS society 
+        FROM users u, residents r, societies s
+        WHERE r.email=? AND u.email=? AND s.society_id=? 
+    ")
+    .bind(email)
+    .bind(email)
+    .bind(society_id);
 
-    match query_result {
-        Ok(resident) => {
-            return (axum::http::StatusCode::OK, Json(resident)).into_response();
-        }
-        Err(err) => {
-            dbg!("Error: {}", err);
-            return(
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch resident data"
-                }))
-            ).into_response();
-        }     
+    match get_resident_query
+        .fetch_one(&data.db)
+        .await {
+            Ok(resident) => {
+                return (axum::http::StatusCode::OK, Json(resident)).into_response();
+            }
+            Err(err) => {
+                dbg!("Error: {}", err);
+                return(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({
+                        "err": "Could not fetch resident data"
+                    }))
+                ).into_response();
+            }     
     };
 }
-
 
 // Profile
 pub async fn add_resident_home_details(

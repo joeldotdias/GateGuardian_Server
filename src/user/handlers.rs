@@ -59,7 +59,7 @@ pub async fn create_user(
     let admin = headers.get("admin").unwrap();
 
     let society_id_query = format!("SELECT society_id FROM users WHERE email = {:?}", admin);
-    println!("{}", society_id_query);
+    
     let society_id = match sqlx::query(&society_id_query)
         .fetch_one(&data.db)
         .await {
@@ -77,7 +77,6 @@ pub async fn create_user(
             }
     };
     
-
     let query_result = 
         sqlx::query(r#"INSERT INTO users (name, email, society_id, category) VALUES (?, ?, ?, ?)"#)
             .bind(name)

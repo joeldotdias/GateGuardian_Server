@@ -1,7 +1,22 @@
 use serde::{ Serialize, Deserialize};
 use sqlx::FromRow;
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, FromRow, Serialize)]
+pub struct ResidentProfileDto {
+    pub name: String,
+    #[serde(rename= "pfpUrl")]
+    pub pfp_url: Option<String>,
+    #[serde(rename= "aboutMe")]
+    pub about_me: Option<String>,
+    #[serde(rename= "phoneNo")]
+    pub phone_no: Option<String>,
+    #[serde(rename= "flatNo")]
+    pub flat_no: Option<i32>,
+    pub building: Option<String>,
+    pub society: String
+}
+
+#[derive(Debug, Deserialize)]
 pub struct AddHomeDetailsSchema {
     pub flat: i64,
     pub building: String

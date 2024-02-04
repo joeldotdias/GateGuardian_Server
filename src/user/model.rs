@@ -1,7 +1,7 @@
-use serde::{ Deserialize, Serialize };
+use serde::Serialize;
 use sqlx::FromRow;
 
-#[derive(Debug, FromRow, Deserialize, Serialize)]
+#[derive(Debug, FromRow, Serialize)]
 pub struct User {
     #[serde(rename = "userId")]
     pub user_id: i32,

@@ -1,13 +1,13 @@
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct CreateUserSchema {
     pub name: String,
     pub email: String,
     pub category: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct GetUserParams {
     pub email: String
 }
