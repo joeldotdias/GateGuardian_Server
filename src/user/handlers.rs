@@ -77,14 +77,16 @@ pub async fn create_user(
             }
     };
     
-    let query_result = 
-        sqlx::query(r#"INSERT INTO users (name, email, society_id, category) VALUES (?, ?, ?, ?)"#)
-            .bind(name)
-            .bind(email)
-            .bind(society_id)
-            .bind(category)
-            .execute(&data.db)
-            .await;
+    let query_result = sqlx::query(r#"
+        INSERT INTO users (name, email, society_id, category) 
+        VALUES (?, ?, ?, ?)
+    "#)
+    .bind(name)
+    .bind(email)
+    .bind(society_id)
+    .bind(category)
+    .execute(&data.db)
+    .await;
     
     match query_result {
         Err(err) => {

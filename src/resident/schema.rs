@@ -18,27 +18,26 @@ pub struct ResidentProfileDto {
 
 #[derive(Debug, Deserialize)]
 pub struct AddHomeDetailsSchema {
-    pub flat: i64,
+    pub flat: i32,
     pub building: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateResidentProfileSchema {
-    pub name: String,
     #[serde(rename="aboutMe")]
     pub about_me: String,
     #[serde(rename="phoneNo")]
     pub phone_no: String
 }
 
-#[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
 pub struct UpdatePfpParams {
-    pub pfpUrl: String
+    #[serde(rename="pfpUrl")]
+    pub pfp_url: String
 }
 
 
-#[derive(Serialize, Debug, FromRow)]
+#[derive(Debug, Serialize, FromRow)]
 pub struct VisitorResidentDto {
     #[serde(rename="visitorId")]
     pub visitor_id: i32,
@@ -47,23 +46,14 @@ pub struct VisitorResidentDto {
     pub phone_no: String,
     #[serde(rename="hostEmail")]
     pub host_email: String,
-    pub otp: String
+    pub code: String
 }
 
 #[derive(Serialize, Deserialize, Debug, FromRow)]
 pub struct SaveVisitorSchema {
     pub name: String,
     #[serde(rename="phoneNo")]
-    pub phone_no: String,
-    #[serde(rename="hostEmail")]
-    pub host_email: String
-}
-
-#[derive(Serialize, Deserialize, Debug, FromRow)]
-pub struct ResidentDetailsSchema {
-    pub flat_no: i32,
-    pub building: String,
-    pub society: String
+    pub phone_no: String
 }
 
 

@@ -16,7 +16,7 @@ use crate::{
     resident::schema::{
         ResidentProfileDto, AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
         VisitorResidentDto, SaveVisitorSchema,
-        ResidentDetailsSchema, AdminResidentDto, AdminSecurityDto
+        AdminResidentDto, AdminSecurityDto
     }
 };
 
@@ -82,11 +82,13 @@ pub async fn add_resident_home_details(
     Json(payload): Json<AddHomeDetailsSchema>
 ) -> impl IntoResponse {
 
+    let email = headers.get("email").unwrap();
+
     let query = format!("
             UPDATE residents
             SET flat_no = {}, building = '{}'
             WHERE email = {:?}
-        ", payload.flat, payload.building, headers.get("email").unwrap());
+        ", payload.flat, payload.building, email);
 
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -94,21 +96,21 @@ pub async fn add_resident_home_details(
 
     match query_result {
         Ok(_) => {
-            (
+            return (
                 axum::http::StatusCode::OK,
                 Json(json!({
                     "message": "Home details updated successfully"
                 }))
-            ).into_response()
+            ).into_response();
         }
         Err(err) => {
             dbg!("Could not update profile: {}", err);
-            (
+            return (
                 axum::http::StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update home details"
                 }))
-            ).into_response()
+            ).into_response();
         }
     }
 }
@@ -120,9 +122,9 @@ pub async fn update_resident_profile(
 ) -> impl IntoResponse {
     let query = format!("
             UPDATE residents
-            SET name = '{}', about_me = '{}', phone_no = '{}'
+            SET about_me = '{}', phone_no = '{}'
             WHERE email = {:?}
-        ", payload.name, payload.about_me, payload.phone_no, headers.get("email").unwrap());
+        ", payload.about_me, payload.phone_no, headers.get("email").unwrap());
 
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -159,7 +161,7 @@ pub async fn update_resident_pfp(
             UPDATE residents
             SET pfp_url = '{}' 
             WHERE email = {:?}
-        ", params.pfpUrl.to_string(), headers.get("email").unwrap());
+        ", params.pfp_url.to_string(), headers.get("email").unwrap());
     
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -193,9 +195,38 @@ pub async fn get_visitors(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    let query = format!("SELECT * FROM visitors WHERE host_email = {:?}", headers.get("email").unwrap());
+    let email = headers.get("email").unwrap();
 
-    let query_result = sqlx::query_as::<_, VisitorResidentDto>(&query)
+    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
+    
+    let resident_id_query_result = sqlx::query(&resident_id_query)
+        .fetch_one(&data.db)
+        .await;
+    
+    let resident_id = match resident_id_query_result {
+        Ok(resident) => {
+            resident.try_get::<i32, _>("resident_id").unwrap()
+        }
+        Err(err) => {
+            dbg!("Couldn't read resident data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not find resident details"
+                }))
+            ).into_response();
+        }
+    };
+    
+    let get_visitors_query = sqlx::query_as::<_, VisitorResidentDto>("
+        SELECT v.visitor_id, v.name, v.phone_no, r.email as host_email, v.code
+        FROM visitors v, residents r
+        WHERE v.resident_id = ? AND r.resident_id = ?;
+    ")
+    .bind(resident_id)
+    .bind(resident_id);
+    
+    let query_result = get_visitors_query
         .fetch_all(&data.db)
         .await;
     
@@ -210,7 +241,9 @@ pub async fn get_visitors(
             dbg!("Couldn't read data {}", err);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
-                "WHOOPS"
+                Json(json!({
+                    "err": "Could not find visitors"
+                }))
             ).into_response();
         }
     };
@@ -218,58 +251,64 @@ pub async fn get_visitors(
 
 pub async fn save_visitor(
     State(data): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(payload): Json<SaveVisitorSchema>
 ) -> impl IntoResponse {
+
+    let email = headers.get("email").unwrap();
+
+    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
     
-    let resident_details: ResidentDetailsSchema;
-    let resident_details_query = format!("SELECT flat_no, building, society FROM residents WHERE email = {:?}", payload.host_email.to_string());
-    
-    let resident_details_query_result = sqlx::query_as::<_, ResidentDetailsSchema>(&resident_details_query)
+    let resident_id_query_result = sqlx::query(&resident_id_query)
         .fetch_one(&data.db)
         .await;
     
-    match resident_details_query_result {
-        Ok(details) => {
-            resident_details = details;
+    let resident_id = match resident_id_query_result {
+        Ok(resident) => {
+            resident.try_get::<i32, _>("resident_id").unwrap()
         }
         Err(err) => {
             dbg!("Couldn't read resident data {}", err);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
-                "WHOOPS"
+                Json(json!({
+                    "err": "Could not find resident details"
+                }))
             ).into_response();
         }
-    }
+    };
 
-    let otp = rand::thread_rng().gen_range(100000..=999999);
+    let code = rand::thread_rng().gen_range(100000..=999999);
 
-    let save_visitor_query_result = sqlx::query(r#"
-        INSERT INTO visitors (name, phone_no, host_email, host_flat, host_building, host_society, otp)
-        VALUES (?, ?, ?, ?, ?, ?, ?)"#
-    ).bind(payload.name.to_string())
-    .bind(payload.phone_no.to_string())
-    .bind(payload.host_email.to_string())
-    .bind(resident_details.flat_no)
-    .bind(resident_details.building.to_string())
-    .bind(resident_details.society.to_string())
-    .bind(otp.to_string())
-    .execute(&data.db)
-    .await;
+    let save_visitor_query = sqlx::query(r#"
+        INSERT INTO visitors (name, phone_no, resident_id, code)
+        VALUES (?, ?, ?, ?)
+    "#)
+    .bind(payload.name)
+    .bind(payload.phone_no)
+    .bind(resident_id)
+    .bind(code.to_string());
 
-    match save_visitor_query_result {
-        Ok(_) => {
-            return (
-                axum::http::StatusCode::OK,
-                "Visitor saved successfully"
-            ).into_response();
-        }
-        Err(err) => {
-            dbg!("Couldn't save visitor {}", err);
-            return (
-                axum::http::StatusCode::BAD_REQUEST,
-                "WHOOPS"
-            ).into_response();
-        }
+    match save_visitor_query
+        .execute(&data.db)
+        .await {
+            Ok(_) => {
+                return (
+                    axum::http::StatusCode::OK,
+                    Json(json!({
+                        "msg": "Visitor saved successfully"
+                    }))
+                ).into_response();
+            }
+            Err(err) => {
+                dbg!("Couldn't save visitor {}", err);
+                return (
+                    axum::http::StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "err": "Could not save visitor details"
+                    }))
+                ).into_response();
+            }
     }
 }
 
@@ -278,18 +317,46 @@ pub async fn get_recent_visitor_otp(
     headers: HeaderMap,
 ) -> impl IntoResponse {
 
-    let query = format!("SELECT otp FROM visitors WHERE host_email = {:?} ORDER BY visitor_id DESC", headers.get("email").unwrap());
+    let email = headers.get("email").unwrap();
 
-    let query_result = sqlx::query(&query)
+    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
+    
+    let resident_id_query_result = sqlx::query(&resident_id_query)
         .fetch_one(&data.db)
         .await;
     
-        match query_result {
+    let resident_id = match resident_id_query_result {
+        Ok(resident) => {
+            resident.try_get::<i32, _>("resident_id").unwrap()
+        }
+        Err(err) => {
+            dbg!("Couldn't read resident data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not find resident details"
+                }))
+            ).into_response();
+        }
+    };
+    
+    let get_code_query = sqlx::query("
+        SELECT code FROM visitors
+        WHERE resident_id = ?
+        ORDER BY visitor_id DESC
+    ")
+    .bind(resident_id);
+
+    let get_code_query_result = get_code_query
+        .fetch_one(&data.db)
+        .await;
+    
+        match get_code_query_result {
             Ok(visitor) => {
                 return(
                     axum::http::StatusCode::OK,
                     Json(json!({
-                        "otp": visitor.try_get::<String, _>("otp").unwrap_or_default()
+                        "code": visitor.try_get::<String, _>("code").unwrap_or_default()
                     }))
                 ).into_response();
             }
@@ -297,7 +364,9 @@ pub async fn get_recent_visitor_otp(
                 dbg!("Couldn't read data {}", err);
                 return (
                     axum::http::StatusCode::BAD_REQUEST,
-                    "WHOOPS"
+                    Json(json!({
+                        "err": "Could not find visitor details"
+                    }))
                 ).into_response();
             }
         };
@@ -309,6 +378,8 @@ pub async fn get_residents_by_society(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
+    
+    
     
     let society_query = format!("SELECT society FROM users WHERE email = {:?}", headers.get("admin").unwrap());
     
