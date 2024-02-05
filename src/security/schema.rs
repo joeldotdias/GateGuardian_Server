@@ -1,7 +1,19 @@
 use serde::{ Serialize, Deserialize};
 use sqlx::FromRow;
 
-#[derive(Serialize, FromRow, Debug)]
+#[derive(Debug, FromRow, Serialize)]
+pub struct SecurityProfileDto {
+    pub name: String,
+    #[serde(rename= "badgeId")]
+    pub badge_id: String,
+    #[serde(rename= "phoneNo")]
+    pub phone_no: String,
+    #[serde(rename= "pfpUrl")]
+    pub pfp_url: Option<String>,
+    pub society: String
+}
+
+#[derive(Debug, FromRow, Serialize)]
 pub struct VisitorSecurityDto {
     #[serde(rename="visitorId")]
     pub visitor_id: i32,
@@ -10,25 +22,32 @@ pub struct VisitorSecurityDto {
     pub host_flat: i32,
     #[serde(rename="hostBuilding")]
     pub host_building: String,
-    #[serde(rename="society")]
-    pub host_society: String,
-    pub otp: String
+    pub society: String,
+    pub code: String
 }
 
 #[derive(Deserialize, Debug)]
 pub struct VerifiedVisitorParams {
     #[serde(rename="visitorId")]
-    pub visitor_id: String
+    pub visitor_id: i32
 }
 
-#[derive(FromRow, Debug)]
+// #[derive(FromRow, Debug)]
+// pub struct VerifiedVisitorDetails {
+//     pub name: String,
+//     pub phone_no: String,
+//     pub host_flat: i32,
+//     pub host_building: String,
+//     pub host_society: String,
+// }
+
+#[derive(Debug, FromRow)]
 pub struct VerifiedVisitorDetails {
     pub name: String,
     pub phone_no: String,
-    pub host_flat: i32,
-    pub host_building: String,
-    pub host_society: String,
+    pub resident_id: i32,
 }
+
 
 #[derive(Deserialize, Debug)]
 pub struct UpdateSecurityProfileSchema {

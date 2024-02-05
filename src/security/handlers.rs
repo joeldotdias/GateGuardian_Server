@@ -6,16 +6,15 @@ use axum::{
     response::IntoResponse,
     Json
 };
-
 use serde_json::json;
 use sqlx::Row;
 
 use crate::{
     AppState,
     security::{
-        model::{ Security, VisitorLog },
+        model::VisitorLog,
         schema::{
-            UpdateSecurityProfileSchema, UpdatePfpParams,
+            SecurityProfileDto, UpdateSecurityProfileSchema, UpdatePfpParams,
             VisitorSecurityDto, VerifiedVisitorParams, VerifiedVisitorDetails
         }
     }
@@ -28,26 +27,51 @@ pub async fn get_security_by_email(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    
-    let query = format!("SELECT * FROM securities WHERE email = {:?}", headers.get("email").unwrap());
+    let email = headers.get("email").unwrap().to_str().unwrap();
 
-    let query_result = sqlx::query_as::<_, Security>(&query)
+    let society_id_query = format!("SELECT society_id FROM users WHERE email = {:?}", email);
+
+    let society_id = match sqlx::query(&society_id_query)
         .fetch_one(&data.db)
-        .await;
+        .await {
+            Ok(resident) => {
+                resident.try_get::<i32, _>("society_id").unwrap()
+            }
+            Err(err) => {
+                dbg!("Could not find society: {}", err);
+                    return (
+                        axum::http::StatusCode::UNAUTHORIZED,
+                        Json(json!({
+                            "err": "Your society could not be found"
+                        }))
+                    ).into_response();
+            }
+    };
 
-    match query_result {
-        Ok(security) => {
-            return (axum::http::StatusCode::OK, Json(security)).into_response();
-        }
-        Err(err) => {
-            dbg!("Error: {} {}", err, query);
-            return(
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch security data"
-                }))
-            ).into_response();
-        }     
+    let get_security_query = sqlx::query_as::<_, SecurityProfileDto>("
+        SELECT u.name, s.badge_id, s.phone_no, s.pfp_url, soc.society_name AS society 
+        FROM users u, securities s, societies soc 
+        WHERE s.email = ? AND u.email = ? AND soc.society_id = ?;
+    ")
+    .bind(email)
+    .bind(email)
+    .bind(society_id);
+    
+    match get_security_query
+        .fetch_one(&data.db)
+        .await {
+            Ok(security) => {
+                return (axum::http::StatusCode::OK, Json(security)).into_response();
+            }
+            Err(err) => {
+                dbg!("Error: {}", err);
+                return(
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({
+                        "err": "Could not fetch security data"
+                    }))
+                ).into_response();
+            }     
     };
 }
 
@@ -105,12 +129,18 @@ pub async fn get_visitors(
 
 pub async fn verified_visitor_to_logs(
     State(data): State<Arc<AppState>>,
-    Query(params): Query<VerifiedVisitorParams>
+    Json(payload): Json<VerifiedVisitorParams>
 ) -> impl IntoResponse {
-    let visitor_id = params.visitor_id.parse::<i32>().unwrap();
+    let visitor_id = payload.visitor_id;
 
-    let get_visitor_data_query = format!("SELECT name, phone_no, host_flat, host_building, host_society FROM visitors WHERE visitor_id = {:?}", visitor_id);
-    let visitor_data = match sqlx::query_as::<_, VerifiedVisitorDetails>(&get_visitor_data_query)
+    let get_visitor_data_query = sqlx::query_as::<_, VerifiedVisitorDetails>("
+        SELECT v.name, v.phone_no, v.resident_id
+        FROM visitors v
+        WHERE v.visitor_id = ?
+    ")
+    .bind(visitor_id);
+    
+    let visitor_data = match get_visitor_data_query
         .fetch_one(&data.db)
         .await {
             Ok(visitor_data) => visitor_data,
@@ -119,15 +149,19 @@ pub async fn verified_visitor_to_logs(
                 return (
                     axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({
-                        "err": "Could not fetch visitor data with provided id"
+                        "err": "Could not fetch visitor data with provided details"
                     }))
                 ).into_response();
             }
     };
     
-    let remove_from_visitors_query = format!("DELETE FROM visitors WHERE visitor_id = {:?}", visitor_id);
+    let remove_from_visitors_query = sqlx::query("
+        DELETE FROM visitors
+        WHERE visitor_id = ?
+        ")
+        .bind(visitor_id);
     
-    let remove_visitor_result = sqlx::query(&remove_from_visitors_query)
+    let remove_visitor_result = remove_from_visitors_query
         .execute(&data.db)
         .await;
 
@@ -137,45 +171,41 @@ pub async fn verified_visitor_to_logs(
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
-                    "err": "Could not move the visitor to logs"
+                    "err": "Could not remove visitor"
                 }))
             ).into_response();
         }
         _ => {}
     }
 
-    let entry = chrono::offset::Utc::now();
-
-    let add_visitor_to_logs_result = sqlx::query(r#"
-        INSERT INTO visitor_logs (name, phone_no, host_flat, host_building, host_society, entry)
-        VALUES (?, ?, ?, ?, ?, ?)"#
-    ).bind(visitor_data.name)
+    let add_visitor_to_logs_query = sqlx::query("
+        INSERT INTO visitor_logs (name, phone_no, resident_id)
+        VALUES (?, ?, ?)
+    ")
+    .bind(visitor_data.name)
     .bind(visitor_data.phone_no)
-    .bind(visitor_data.host_flat)
-    .bind(visitor_data.host_building)
-    .bind(visitor_data.host_society)
-    .bind(entry)
-    .execute(&data.db)
-    .await;
+    .bind(visitor_data.resident_id);
     
-    match add_visitor_to_logs_result {
-        Ok(_) => {
-            return (
-                axum::http::StatusCode::OK,
-                Json(json!({
-                    "msg": "Successfully moved visitor to logs"
-                }))
-            ).into_response();
-        }
-        Err(err) => {
-            dbg!("Could not fetch visitors data: {}", err);
-            return (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch visitors data"
-                }))
-            ).into_response();
-        }
+    match add_visitor_to_logs_query
+        .execute(&data.db)
+        .await {
+            Ok(_) => {
+                return (
+                    axum::http::StatusCode::OK,
+                    Json(json!({
+                        "msg": "Successfully moved visitor to logs"
+                    }))
+                ).into_response();
+            }
+            Err(err) => {
+                dbg!("Could not move visitor to logs: {}", err);
+                return (
+                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({
+                        "err": "Could not move visitor to logs"
+                    }))
+                ).into_response();
+            }
     }
 }
 
