@@ -11,13 +11,10 @@ use sqlx::Row;
 
 use crate::{
     AppState,
-    security::{
-        model::VisitorLog,
-        schema::{
+    security::schema::{
             SecurityProfileDto, UpdateSecurityProfileSchema, UpdatePfpParams,
-            VisitorSecurityDto, VerifiedVisitorParams, VerifiedVisitorDetails
+            VisitorSecurityDto, VerifiedVisitorParams, VerifiedVisitorDetails, VisitorLogDto
         }
-    }
 };
 
 
@@ -81,14 +78,17 @@ pub async fn get_visitors(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
-    let security_society_query = format!("SELECT society from securities WHERE email = {:?}", headers.get("email").unwrap());
+    
+    let email = headers.get("email").unwrap();
+    
+    let security_society_query = format!("SELECT society_id from users WHERE email = {:?}", email);
 
     let security_society = match sqlx::query(&security_society_query)
         .fetch_one(&data.db)
         .await {
-        Ok(society) => society.try_get::<String, _>("society").unwrap_or_default(),
+        Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
+            dbg!("Could not fetch security details :{} {}", err, security_society_query);
             return (
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(json!({
@@ -98,13 +98,19 @@ pub async fn get_visitors(
         }
     };
     
-    let query = format!("
-            SELECT visitor_id, name, host_flat, host_building, host_society, otp
-            FROM visitors
-            WHERE host_society = {:?}
-        ", security_society);
+    let get_visitors_query = sqlx::query_as::<_, VisitorSecurityDto>("
+    SELECT v.visitor_id, v.name, r.flat_no AS host_flat, r.building AS host_building, soc.society_name AS society, v.code
+    FROM visitors v, residents r, societies soc
+    WHERE r.email IN (
+        SELECT r.email 
+        FROM residents r NATURAL JOIN users u 
+        WHERE u.society_id = ?
+    ) AND v.resident_id = r.resident_id AND soc.society_id = ?
+    ")
+    .bind(security_society)
+    .bind(security_society);
 
-    let query_result = sqlx::query_as::<_, VisitorSecurityDto>(&query)
+    let query_result = get_visitors_query
         .fetch_all(&data.db)
         .await;
 
@@ -131,6 +137,7 @@ pub async fn verified_visitor_to_logs(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<VerifiedVisitorParams>
 ) -> impl IntoResponse {
+    
     let visitor_id = payload.visitor_id;
 
     let get_visitor_data_query = sqlx::query_as::<_, VerifiedVisitorDetails>("
@@ -156,8 +163,8 @@ pub async fn verified_visitor_to_logs(
     };
     
     let remove_from_visitors_query = sqlx::query("
-        DELETE FROM visitors
-        WHERE visitor_id = ?
+            DELETE FROM visitors
+            WHERE visitor_id = ?
         ")
         .bind(visitor_id);
     
@@ -213,14 +220,17 @@ pub async fn get_visitor_logs(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
-    let security_society_query = format!("SELECT society from securities WHERE email = {:?}", headers.get("email").unwrap());
+    
+    let email = headers.get("email").unwrap();
+    
+    let security_society_query = format!("SELECT society_id from users WHERE email = {:?}", email);
 
     let security_society = match sqlx::query(&security_society_query)
         .fetch_one(&data.db)
         .await {
-        Ok(society) => society.try_get::<String, _>("society").unwrap_or_default(),
+        Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
+            dbg!("Could not fetch security details :{} {}", err, security_society_query);
             return (
                 axum::http::StatusCode::UNAUTHORIZED,
                 Json(json!({
@@ -230,9 +240,19 @@ pub async fn get_visitor_logs(
         }
     };
     
-    let query = format!("SELECT * FROM visitor_logs WHERE host_society = {:?}", security_society);
+    let get_visitor_logs_query = sqlx::query_as::<_, VisitorLogDto>("
+        SELECT vl.log_id, vl.name, r.flat_no as host_flat, r.building as host_building, soc.society_name AS host_society, vl.entry
+        FROM visitor_logs vl, residents r, societies soc
+        WHERE r.email IN (
+            SELECT r.email 
+            FROM residents r NATURAL JOIN users u 
+            WHERE u.society_id = ?
+        ) AND vl.resident_id = r.resident_id AND soc.society_id = ?;
+    ")
+    .bind(security_society)
+    .bind(security_society);
 
-    let query_result = sqlx::query_as::<_, VisitorLog>(&query)
+    let query_result = get_visitor_logs_query
         .fetch_all(&data.db)
         .await;
 
@@ -244,11 +264,11 @@ pub async fn get_visitor_logs(
             ).into_response();
         }
         Err(err) => {
-            dbg!("Could not fetch visitors data: {}", err);
+            dbg!("Could not fetch visitor logs data: {}", err);
             return (
                 axum::http::StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
-                    "err": "Could not fetch visitors data"
+                    "err": "Could not fetch visitor logs data"
                 }))
             ).into_response();
         }
@@ -262,6 +282,7 @@ pub async fn update_security_profile(
     headers: HeaderMap,
     Json(payload): Json<UpdateSecurityProfileSchema>
 ) -> impl IntoResponse {
+    
     let query = format!("
             UPDATE securities
             SET name = '{}', badge_id = '{}', phone_no = '{}'
@@ -303,7 +324,7 @@ pub async fn update_security_pfp(
             UPDATE securities
             SET pfp_url = '{}'
             WHERE email = {:?}
-        ", params.pfpUrl.to_string(), headers.get("email").unwrap());
+        ", params.pfp_url.to_string(), headers.get("email").unwrap());
     
     let query_result = sqlx::query(&query)
         .execute(&data.db)

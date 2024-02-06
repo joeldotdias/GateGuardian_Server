@@ -37,7 +37,7 @@ pub struct UpdatePfpParams {
 }
 
 
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Debug, FromRow, Serialize)]
 pub struct VisitorResidentDto {
     #[serde(rename="visitorId")]
     pub visitor_id: i32,
@@ -49,7 +49,7 @@ pub struct VisitorResidentDto {
     pub code: String
 }
 
-#[derive(Serialize, Deserialize, Debug, FromRow)]
+#[derive(Debug, FromRow, Deserialize, )]
 pub struct SaveVisitorSchema {
     pub name: String,
     #[serde(rename="phoneNo")]
@@ -57,7 +57,7 @@ pub struct SaveVisitorSchema {
 }
 
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SavePersonSchema {
     pub name: String,
     pub email: String

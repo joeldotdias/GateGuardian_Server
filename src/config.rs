@@ -10,9 +10,9 @@ impl Config {
         let database_url = std::env::var("DATABASE_URL")
             .expect("KINDLY SET THE DATABASE URL");
           
-        Config {
+        return Config {
             socket_addr,
             database_url
-        } 
+        };
     }
 }

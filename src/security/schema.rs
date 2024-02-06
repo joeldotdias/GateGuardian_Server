@@ -1,4 +1,5 @@
-use serde::{ Serialize, Deserialize};
+use chrono::DateTime;
+use serde::{ Serialize, Deserialize };
 use sqlx::FromRow;
 
 #[derive(Debug, FromRow, Serialize)]
@@ -26,20 +27,21 @@ pub struct VisitorSecurityDto {
     pub code: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, FromRow, Serialize)]
+pub struct VisitorLogDto {
+    pub name: String,
+    #[serde(rename="hostFlat")]
+    pub host_flat: i32,
+    #[serde(rename="hostBuilding")]
+    pub host_building: String,
+    pub entry: DateTime<chrono::Utc>
+}
+
+#[derive(Debug, Deserialize)]
 pub struct VerifiedVisitorParams {
     #[serde(rename="visitorId")]
     pub visitor_id: i32
 }
-
-// #[derive(FromRow, Debug)]
-// pub struct VerifiedVisitorDetails {
-//     pub name: String,
-//     pub phone_no: String,
-//     pub host_flat: i32,
-//     pub host_building: String,
-//     pub host_society: String,
-// }
 
 #[derive(Debug, FromRow)]
 pub struct VerifiedVisitorDetails {
@@ -49,7 +51,7 @@ pub struct VerifiedVisitorDetails {
 }
 
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateSecurityProfileSchema {
     pub name: String,
     #[serde(rename="aboutMe")]
@@ -58,8 +60,8 @@ pub struct UpdateSecurityProfileSchema {
     pub phone_no: String
 }
 
-#[derive(Deserialize, Debug)]
-#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
 pub struct UpdatePfpParams {
-    pub pfpUrl: String
+    #[serde(rename="pfpUrl")]
+    pub pfp_url: String
 }
