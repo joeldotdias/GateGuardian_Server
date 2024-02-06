@@ -99,13 +99,13 @@ pub async fn get_visitors(
     };
     
     let get_visitors_query = sqlx::query_as::<_, VisitorSecurityDto>("
-    SELECT v.visitor_id, v.name, r.flat_no AS host_flat, r.building AS host_building, soc.society_name AS society, v.code
-    FROM visitors v, residents r, societies soc
-    WHERE r.email IN (
-        SELECT r.email 
-        FROM residents r NATURAL JOIN users u 
-        WHERE u.society_id = ?
-    ) AND v.resident_id = r.resident_id AND soc.society_id = ?
+        SELECT v.visitor_id, v.name, r.flat_no AS host_flat, r.building AS host_building, soc.society_name AS society, v.code
+        FROM visitors v, residents r, societies soc
+        WHERE r.email IN (
+            SELECT r.email 
+            FROM residents r NATURAL JOIN users u 
+            WHERE u.society_id = ?
+        ) AND v.resident_id = r.resident_id AND soc.society_id = ?
     ")
     .bind(security_society)
     .bind(security_society);
