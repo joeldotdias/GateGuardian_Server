@@ -63,13 +63,13 @@ pub struct SavePersonSchema {
     pub email: String
 }
 
-#[derive(Debug, FromRow, Deserialize, Serialize)]
+#[derive(Debug, FromRow, Serialize)]
 pub struct AdminResidentDto {
     pub name: String,
     pub email: String,
     #[serde(rename= "flatNo")]
-    pub flat_no: i32,
-    pub building: String
+    pub flat_no: Option<i32>,
+    pub building: Option<String>
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -77,5 +77,5 @@ pub struct AdminSecurityDto {
     pub name: String,
     pub email: String,
     #[serde(rename= "badgeId")]
-    pub badge_id: String
+    pub badge_id: Option<String>
 }

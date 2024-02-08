@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{ Query, State },
+    extract::State,
     http::header::HeaderMap,
     response::IntoResponse,
     Json
@@ -285,9 +285,9 @@ pub async fn update_security_profile(
     
     let query = format!("
             UPDATE securities
-            SET name = '{}', badge_id = '{}', phone_no = '{}'
+            SET badge_id = '{}', phone_no = '{}'
             WHERE email = {:?}
-        ", payload.name, payload.about_me, payload.phone_no, headers.get("email").unwrap());
+        ", payload.badge_id, payload.phone_no, headers.get("email").unwrap());
 
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -317,14 +317,14 @@ pub async fn update_security_profile(
 pub async fn update_security_pfp(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap,
-    Query(params): Query<UpdatePfpParams>
+    Json(payload): Json<UpdatePfpParams>
 ) -> impl IntoResponse {
 
     let query = format!("
             UPDATE securities
             SET pfp_url = '{}'
             WHERE email = {:?}
-        ", params.pfp_url.to_string(), headers.get("email").unwrap());
+        ", payload.pfp_url.to_string(), headers.get("email").unwrap());
     
     let query_result = sqlx::query(&query)
         .execute(&data.db)

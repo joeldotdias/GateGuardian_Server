@@ -2,7 +2,7 @@ use std::sync::Arc;
 use rand::Rng;
 
 use axum::{
-    extract::{ Query, State },
+    extract::State,
     http::header::HeaderMap,
     response::IntoResponse,
     Json
@@ -154,14 +154,14 @@ pub async fn update_resident_profile(
 pub async fn update_resident_pfp(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap,
-    Query(params): Query<UpdatePfpParams>
+    Json(payload): Json<UpdatePfpParams>
 ) -> impl IntoResponse {
 
     let query = format!("
             UPDATE residents
             SET pfp_url = '{}' 
             WHERE email = {:?}
-        ", params.pfp_url.to_string(), headers.get("email").unwrap());
+        ", payload.pfp_url.to_string(), headers.get("email").unwrap());
     
     let query_result = sqlx::query(&query)
         .execute(&data.db)
@@ -379,43 +379,37 @@ pub async fn get_residents_by_society(
     headers: HeaderMap
 ) -> impl IntoResponse {
     
-    
-    
-    let society_query = format!("SELECT society FROM users WHERE email = {:?}", headers.get("admin").unwrap());
-    
-    let society_query_result = sqlx::query(&society_query)
-        .fetch_one(&data.db)
-        .await;
+    let email = headers.get("admin").unwrap().to_str().unwrap();
 
-    let society = match society_query_result {
-        Ok(row) => row.try_get::<String, _>("society").unwrap_or_default(),
-        Err(err) => {
-            dbg!("Couldn't read data {}", err);
-            return (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "WHOOPS"
-            ).into_response();
-        }
-    };
-
-    let residents_query = format!("SELECT name, email, flat_no, building FROM residents WHERE society = {:?}", society);
-
-    let resident_query_result = sqlx::query_as::<_, AdminResidentDto>(&residents_query)
+    let get_residents_query = sqlx::query_as::<_, AdminResidentDto>("
+        SELECT u.name, u.email, r.flat_no, r.building 
+        FROM residents r NATURAL JOIN users u 
+        WHERE u.society_id = (
+            SELECT u.society_id 
+            FROM users u 
+            WHERE u.email = ?
+        )
+    ")
+    .bind(email);
+    
+    let get_residents_query_result = get_residents_query
         .fetch_all(&data.db)
         .await;
 
-    match resident_query_result {
-        Ok(rows) => {
+    match get_residents_query_result {
+        Ok(residents) => {
             return (
                 axum::http::StatusCode::OK,
-                Json(rows)
+                Json(residents)
             ).into_response();
         }
         Err(err) => {
-            dbg!("Couldn't read data {}", err);
+            dbg!("Couldn't get residents data {}", err);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
-                "WHOOPS"
+                Json(json!({
+                    "err": "Could not fetch resident details"
+                }))
             ).into_response();
         }
     }
@@ -425,42 +419,38 @@ pub async fn get_security_by_society(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
+
+    let email = headers.get("admin").unwrap().to_str().unwrap();
+
+    let get_securities_query = sqlx::query_as::<_, AdminSecurityDto>("
+        SELECT u.name, u.email, s.badge_id 
+        FROM securities s NATURAL JOIN users u 
+        WHERE u.society_id = (
+            SELECT u.society_id 
+            FROM users u 
+            WHERE u.email = ?
+        )
+    ")
+    .bind(email);
     
-    let society_query = format!("SELECT society FROM users WHERE email = {:?}", headers.get("admin").unwrap());
-    
-    let society_query_result = sqlx::query(&society_query)
-        .fetch_one(&data.db)
-        .await;
-
-    let society = match society_query_result {
-        Ok(row) => row.try_get::<String, _>("society").unwrap_or_default(),
-        Err(err) => {
-            dbg!("Couldn't read data {}", err);
-            return (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "WHOOPS"
-            ).into_response();
-        }
-    };
-
-    let security_query = format!("SELECT name, email, badge_id FROM securities WHERE society = {:?}", society);
-
-    let security_query_result = sqlx::query_as::<_, AdminSecurityDto>(&security_query)
+    let get_securities_query_result = get_securities_query
         .fetch_all(&data.db)
         .await;
 
-    match security_query_result {
-        Ok(rows) => {
+    match get_securities_query_result {
+        Ok(securities) => {
             return (
                 axum::http::StatusCode::OK,
-                Json(rows)
+                Json(securities)
             ).into_response();
         }
         Err(err) => {
-            dbg!("Couldn't read data {}", err);
+            dbg!("Couldn't get securities data {}", err);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
-                "WHOOPS"
+                Json(json!({
+                    "err": "Could not fetch securities details"
+                }))
             ).into_response();
         }
     }

@@ -53,9 +53,8 @@ pub struct VerifiedVisitorDetails {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSecurityProfileSchema {
-    pub name: String,
-    #[serde(rename="aboutMe")]
-    pub about_me: String,
+    #[serde(rename="badgeId")]
+    pub badge_id: String,
     #[serde(rename="phoneNo")]
     pub phone_no: String
 }
