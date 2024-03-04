@@ -10,7 +10,7 @@ use serde_json::json;
 use sqlx::Row;
 
 use crate::{
-    AppState,
+    config::AppState,
     security::schema::{
             SecurityProfileDto, UpdateSecurityProfileSchema, UpdatePfpParams,
             VisitorSecurityDto, VerifiedVisitorParams, VerifiedVisitorDetails, VisitorLogDto

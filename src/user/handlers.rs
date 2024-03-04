@@ -10,7 +10,7 @@ use serde_json::json;
 use sqlx::Row;
 
 use crate::{
-    AppState,
+    config::AppState,
     user::{
         model::User,
         schema::{ CreateUserSchema, GetUserParams }

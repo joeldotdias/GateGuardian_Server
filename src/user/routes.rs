@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::{
-    AppState,
+    config::AppState,
     user::handlers::{ get_user, create_user }
 };
 

@@ -3,26 +3,27 @@ use rand::Rng;
 
 use axum::{
     extract::State,
-    http::header::HeaderMap,
+    http::{
+        header::HeaderMap,
+        StatusCode
+    },
     response::IntoResponse,
     Json
 };
 
 use serde_json::json;
-use sqlx::Row;
+use sqlx::{ Row, query, query_as };
 
 use crate::{
-    AppState,
+    config::AppState,
     resident::schema::{
-        ResidentProfileDto, AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
-        VisitorResidentDto, SaveVisitorSchema,
-        SaveNoticeSchema,
-        AdminResidentDto, AdminSecurityDto
-    }
+        ResidentProfileDto, DashProfileDetails,
+        AddHomeDetailsSchema,    UpdatePfpParams, UpdateResidentProfileSchema, 
+        SaveVisitorSchema, VisitorResidentDto, SaveNoticeSchema, NoticeDto, 
+        AdminResidentDto, AdminSecurityDto,
+    },
+    sanitize_headers
 };
-
-use super::schema::NoticeDto;
-
 
 
 // App entry
@@ -31,11 +32,24 @@ pub async fn get_resident_by_email(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    let email = headers.get("email").unwrap().to_str().unwrap();
+    let email = match sanitize_headers(headers, "email") {
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let society_id_query = format!("SELECT society_id FROM users WHERE email = {:?}", email);
+    println!("{}", email);
 
-    let society_id = match sqlx::query(&society_id_query)
+    let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
+        .bind(&email);
+
+    let society_id = match society_id_query
         .fetch_one(&data.db)
         .await {
             Ok(resident) => {
@@ -44,7 +58,7 @@ pub async fn get_resident_by_email(
             Err(err) => {
                 dbg!("Could not find society: {}", err);
                     return (
-                        axum::http::StatusCode::UNAUTHORIZED,
+                        StatusCode::UNAUTHORIZED,
                         Json(json!({
                             "err": "Your society could not be found"
                         }))
@@ -52,25 +66,25 @@ pub async fn get_resident_by_email(
             }
     };
     
-    let get_resident_query = sqlx::query_as::<_, ResidentProfileDto>("
+    let get_resident_query = query_as::<_, ResidentProfileDto>("
         SELECT u.name, r.pfp_url, r.about_me, r.phone_no, r.flat_no, r.building, s.society_name AS society 
         FROM users u, residents r, societies s
         WHERE r.email=? AND u.email=? AND s.society_id=? 
     ")
-    .bind(email)
-    .bind(email)
+    .bind(&email)
+    .bind(&email)
     .bind(society_id);
 
     match get_resident_query
         .fetch_one(&data.db)
         .await {
             Ok(resident) => {
-                return (axum::http::StatusCode::OK, Json(resident)).into_response();
+                return (StatusCode::OK, Json(resident)).into_response();
             }
             Err(err) => {
                 dbg!("Error: {}", err);
                 return(
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({
                         "err": "Could not fetch resident data"
                     }))
@@ -86,22 +100,35 @@ pub async fn add_resident_home_details(
     Json(payload): Json<AddHomeDetailsSchema>
 ) -> impl IntoResponse {
 
-    let email = headers.get("email").unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let query = format!("
+    let update_details_query = query("
             UPDATE residents
-            SET flat_no = {}, building = '{}'
-            WHERE email = {:?}
-        ", payload.flat, payload.building, email);
+            SET flat_no = ?, building = ?
+            WHERE email = ?
+        ")
+        .bind(payload.flat)
+        .bind(payload.building)
+        .bind(email);
 
-    let query_result = sqlx::query(&query)
+    let query_result = update_details_query
         .execute(&data.db)
         .await;
 
     match query_result {
         Ok(_) => {
             return (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(json!({
                     "message": "Home details updated successfully"
                 }))
@@ -110,7 +137,7 @@ pub async fn add_resident_home_details(
         Err(err) => {
             dbg!("Could not update profile: {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update home details"
                 }))
@@ -124,20 +151,36 @@ pub async fn update_resident_profile(
     headers: HeaderMap,
     Json(payload): Json<UpdateResidentProfileSchema>
 ) -> impl IntoResponse {
-    let query = format!("
+    
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
+    
+    let update_profile_query = query("
             UPDATE residents
-            SET about_me = '{}', phone_no = '{}'
-            WHERE email = {:?}
-        ", payload.about_me, payload.phone_no, headers.get("email").unwrap());
+            SET about_me = ?, phone_no = ?
+            WHERE email = ?
+        ")
+        .bind(payload.about_me)
+        .bind(payload.phone_no)
+        .bind(email);
 
-    let query_result = sqlx::query(&query)
+    let query_result = update_profile_query
         .execute(&data.db)
         .await;
 
     match query_result {
         Ok(_) => {
             (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(json!({
                     "message": "Profile updated successfully"
                 }))
@@ -146,7 +189,7 @@ pub async fn update_resident_profile(
         Err(err) => {
             dbg!("Could not update profile: {}", err);
             (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update pfp"
                 }))
@@ -161,29 +204,43 @@ pub async fn update_resident_pfp(
     Json(payload): Json<UpdatePfpParams>
 ) -> impl IntoResponse {
 
-    let query = format!("
-            UPDATE residents
-            SET pfp_url = '{}' 
-            WHERE email = {:?}
-        ", payload.pfp_url.to_string(), headers.get("email").unwrap());
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
     
-    let query_result = sqlx::query(&query)
+    let update_pfp_query = query("
+            UPDATE residents
+            SET pfp_url = ? 
+            WHERE email = ?
+        ")
+        .bind(payload.pfp_url)
+        .bind(email);
+    
+    let query_result = update_pfp_query
         .execute(&data.db)
         .await;
 
     match query_result {
         Ok(_) => {
             return (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(json!({
                     "message": "Pfp updated successfully"
                 }))
             ).into_response();
         }
         Err(err) => {
-            dbg!("err: {}\nquery:{}", err, &query);
+            dbg!("err: {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update pfp"
                 }))
@@ -193,17 +250,73 @@ pub async fn update_resident_pfp(
 }
 
 
+//Dashboard
+pub async fn get_dashboard_details(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+    
+    let email = match sanitize_headers(headers, "email") {
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
+
+    let profile_details_query = query_as::<_, DashProfileDetails>("
+        SELECT u.name, r.flat_no, r.building, r.pfp_url 
+        FROM residents r NATURAL JOIN users u 
+        WHERE email = ?;
+    ")
+    .bind(&email)
+    .fetch_one(&data.db);
+
+    match profile_details_query.await {
+        Ok(profile) => {
+            return(
+                StatusCode::OK,
+                Json(profile)
+            ).into_response();
+        },
+        Err(err) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({
+                    "err": err.to_string()
+                }))
+            ).into_response(); 
+        }
+    };
+}
+
+
 // Visitors
 pub async fn get_visitors(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    let email = headers.get("email").unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
+    let resident_id_query = query("SELECT resident_id FROM residents WHERE email = ?")
+        .bind(email);
     
-    let resident_id_query_result = sqlx::query(&resident_id_query)
+    let resident_id_query_result = resident_id_query
         .fetch_one(&data.db)
         .await;
     
@@ -214,7 +327,7 @@ pub async fn get_visitors(
         Err(err) => {
             dbg!("Couldn't read resident data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not find resident details"
                 }))
@@ -222,7 +335,7 @@ pub async fn get_visitors(
         }
     };
     
-    let get_visitors_query = sqlx::query_as::<_, VisitorResidentDto>("
+    let get_visitors_query = query_as::<_, VisitorResidentDto>("
         SELECT v.visitor_id, v.name, v.phone_no, r.email as host_email, v.code
         FROM visitors v, residents r
         WHERE v.resident_id = ? AND r.resident_id = ?;
@@ -235,16 +348,16 @@ pub async fn get_visitors(
         .await;
     
     match query_result {
-        Ok(rows) => {
+        Ok(visitors) => {
             return(
-                axum::http::StatusCode::OK,
-                Json(rows)
+                StatusCode::OK,
+                Json(visitors)
             ).into_response();
         }
         Err(err) => {
             dbg!("Couldn't read data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not find visitors"
                 }))
@@ -259,11 +372,22 @@ pub async fn save_visitor(
     Json(payload): Json<SaveVisitorSchema>
 ) -> impl IntoResponse {
 
-    let email = headers.get("email").unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
+    let resident_id_query = query("SELECT resident_id FROM residents WHERE email = ?")
+        .bind(email);
     
-    let resident_id_query_result = sqlx::query(&resident_id_query)
+    let resident_id_query_result = resident_id_query
         .fetch_one(&data.db)
         .await;
     
@@ -274,7 +398,7 @@ pub async fn save_visitor(
         Err(err) => {
             dbg!("Couldn't read resident data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not find resident details"
                 }))
@@ -284,7 +408,7 @@ pub async fn save_visitor(
 
     let code = rand::thread_rng().gen_range(100000..=999999);
 
-    let save_visitor_query = sqlx::query(r#"
+    let save_visitor_query = query(r#"
         INSERT INTO visitors (name, phone_no, resident_id, code)
         VALUES (?, ?, ?, ?)
     "#)
@@ -298,7 +422,7 @@ pub async fn save_visitor(
         .await {
             Ok(_) => {
                 return (
-                    axum::http::StatusCode::OK,
+                    StatusCode::OK,
                     Json(json!({
                         "msg": "Visitor saved successfully"
                     }))
@@ -307,7 +431,7 @@ pub async fn save_visitor(
             Err(err) => {
                 dbg!("Couldn't save visitor {}", err);
                 return (
-                    axum::http::StatusCode::BAD_REQUEST,
+                    StatusCode::BAD_REQUEST,
                     Json(json!({
                         "err": "Could not save visitor details"
                     }))
@@ -321,11 +445,22 @@ pub async fn get_recent_visitor_otp(
     headers: HeaderMap,
 ) -> impl IntoResponse {
 
-    let email = headers.get("email").unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let resident_id_query = format!("SELECT resident_id FROM residents WHERE email = {:?}", email);
+    let resident_id_query = query("SELECT resident_id FROM residents WHERE email = ?")
+        .bind(email);
     
-    let resident_id_query_result = sqlx::query(&resident_id_query)
+    let resident_id_query_result = resident_id_query
         .fetch_one(&data.db)
         .await;
     
@@ -336,7 +471,7 @@ pub async fn get_recent_visitor_otp(
         Err(err) => {
             dbg!("Couldn't read resident data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not find resident details"
                 }))
@@ -344,7 +479,7 @@ pub async fn get_recent_visitor_otp(
         }
     };
     
-    let get_code_query = sqlx::query("
+    let get_code_query = query("
         SELECT code FROM visitors
         WHERE resident_id = ?
         ORDER BY visitor_id DESC
@@ -358,7 +493,7 @@ pub async fn get_recent_visitor_otp(
         match get_code_query_result {
             Ok(visitor) => {
                 return(
-                    axum::http::StatusCode::OK,
+                    StatusCode::OK,
                     Json(json!({
                         "code": visitor.try_get::<String, _>("code").unwrap_or_default()
                     }))
@@ -367,7 +502,7 @@ pub async fn get_recent_visitor_otp(
             Err(err) => {
                 dbg!("Couldn't read data {}", err);
                 return (
-                    axum::http::StatusCode::BAD_REQUEST,
+                    StatusCode::BAD_REQUEST,
                     Json(json!({
                         "err": "Could not find visitor details"
                     }))
@@ -383,9 +518,19 @@ pub async fn get_residents_by_society(
     headers: HeaderMap
 ) -> impl IntoResponse {
     
-    let email = headers.get("admin").unwrap().to_str().unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let get_residents_query = sqlx::query_as::<_, AdminResidentDto>("
+    let get_residents_query = query_as::<_, AdminResidentDto>("
         SELECT u.name, u.email, r.flat_no, r.building 
         FROM residents r NATURAL JOIN users u 
         WHERE u.society_id = (
@@ -403,14 +548,14 @@ pub async fn get_residents_by_society(
     match get_residents_query_result {
         Ok(residents) => {
             return (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(residents)
             ).into_response();
         }
         Err(err) => {
             dbg!("Couldn't get residents data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not fetch resident details"
                 }))
@@ -424,9 +569,19 @@ pub async fn get_security_by_society(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    let email = headers.get("admin").unwrap().to_str().unwrap();
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let get_securities_query = sqlx::query_as::<_, AdminSecurityDto>("
+    let get_securities_query = query_as::<_, AdminSecurityDto>("
         SELECT u.name, u.email, s.badge_id 
         FROM securities s NATURAL JOIN users u 
         WHERE u.society_id = (
@@ -444,14 +599,14 @@ pub async fn get_security_by_society(
     match get_securities_query_result {
         Ok(securities) => {
             return (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(securities)
             ).into_response();
         }
         Err(err) => {
             dbg!("Couldn't get securities data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not fetch securities details"
                 }))
@@ -466,9 +621,20 @@ pub async fn get_notices(
     State(data): State<Arc<AppState>>,
     headers: HeaderMap
 ) -> impl IntoResponse {
-   let email = headers.get("email").unwrap().to_str().unwrap();
+   
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-   let get_notices_query = sqlx::query_as::<_, NoticeDto>("
+   let get_notices_query = query_as::<_, NoticeDto>("
         SELECT title, body, posted 
         FROM notices
         WHERE society_id = (
@@ -484,14 +650,14 @@ pub async fn get_notices(
        .await  {
         Ok(notices) => {
             return (
-                axum::http::StatusCode::OK,
+                StatusCode::OK,
                 Json(notices)
             ).into_response();
         }
         Err(err) => {
             dbg!("Couldn't get notices data {}", err);
             return (
-                axum::http::StatusCode::BAD_REQUEST,
+                StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not fetch notices details"
                 }))
@@ -505,9 +671,20 @@ pub async fn add_notice(
     headers: HeaderMap,
     Json(payload): Json<SaveNoticeSchema>
 ) -> impl IntoResponse{
-    let email = headers.get("admin").unwrap().to_str().unwrap();
+    
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
 
-    let get_society_query = sqlx::query("SELECT society_id FROM users WHERE email = ?")
+    let get_society_query = query("SELECT society_id FROM users WHERE email = ?")
         .bind(email)
         .fetch_one(&data.db)
         .await;
@@ -519,7 +696,7 @@ pub async fn add_notice(
             Err(err) => {
                 dbg!("Could not find society: {}", err);
                     return (
-                        axum::http::StatusCode::UNAUTHORIZED,
+                        StatusCode::UNAUTHORIZED,
                         Json(json!({
                             "err": "Your society could not be found"
                         }))
@@ -527,7 +704,7 @@ pub async fn add_notice(
             }
         };
 
-    let add_notice_query = sqlx::query("
+    let add_notice_query = query("
         INSERT INTO notices (title, body, society_id) VALUES (
             ?, ?, ?
         )
@@ -541,7 +718,7 @@ pub async fn add_notice(
         .await{
             Ok(_) => {
                 return (
-                    axum::http::StatusCode::CREATED,
+                    StatusCode::CREATED,
                     Json(json!({
                         "msg": "Notice added"
                     }))
@@ -549,7 +726,8 @@ pub async fn add_notice(
             }
             Err(err) => {
                 dbg!("Failed to add notice: {:?}", err);
-                return (axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({
                         "err": "Failed to add notice"
                     }))

@@ -37,6 +37,16 @@ pub struct UpdatePfpParams {
     pub pfp_url: String
 }
 
+#[derive(Debug, FromRow, Serialize)]
+pub struct DashProfileDetails {
+    pub name: String,
+    #[serde(rename="flatNo")]
+    pub flat_no: i32,
+    pub building: String,
+    #[serde(rename="pfpUrl")]
+    pub pfp_url: String
+}
+
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct VisitorResidentDto {

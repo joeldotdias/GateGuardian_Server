@@ -1,3 +1,5 @@
+use sqlx::{ Pool, MySql };
+
 pub struct Config {
     pub socket_addr: String,
     pub database_url: String,
@@ -15,4 +17,8 @@ impl Config {
             database_url
         };
     }
+}
+
+pub struct AppState {
+    pub db: Pool<MySql>
 }

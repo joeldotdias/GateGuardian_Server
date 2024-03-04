@@ -1,24 +1,16 @@
 use std::sync::Arc;
 use dotenv::dotenv;
-use sqlx::{ Pool, MySql };
 
-mod config;
-mod database;
-mod middleware;
-mod router;
-
-mod user;
-mod resident;
-mod security;
-
-pub struct AppState {
-    db: Pool<MySql>
-}
+use ggserver_in_rust::{
+    config::{ Config, AppState },
+    database,
+    router
+};
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let config = config::Config::env_config();
+    let config = Config::env_config();
     
     let pool = database::db_connection(&config.database_url).await;
 

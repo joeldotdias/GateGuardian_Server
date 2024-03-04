@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::Router;
 
 use crate::{
-    AppState,
+    config::AppState,
     middleware::{ self },
     user, resident, security
 };
