@@ -1,5 +1,6 @@
 use serde::{ Serialize, Deserialize};
 use sqlx::FromRow;
+use chrono::DateTime;
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct ResidentProfileDto {
@@ -54,6 +55,19 @@ pub struct SaveVisitorSchema {
     pub name: String,
     #[serde(rename="phoneNo")]
     pub phone_no: String
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveNoticeSchema {
+    pub title: String,
+    pub body: String
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct NoticeDto {
+    pub title: String,
+    pub body: String,
+    pub posted: DateTime<chrono::Utc>
 }
 
 

@@ -1,4 +1,5 @@
 use sqlx::FromRow;
+use chrono::DateTime;
 
 #[derive(Debug, FromRow)]
 pub struct Resident {
@@ -10,3 +11,14 @@ pub struct Resident {
     pub flat_no: i32,
     pub building: String,
 }
+
+
+
+#[derive(Debug, FromRow)]
+pub struct Notice {
+    pub notice_id: i32,
+    pub society_id: i32,
+    pub title: String,
+    pub body: String,
+    pub posted: DateTime<chrono::Utc> 
+}  

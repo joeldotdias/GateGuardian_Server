@@ -16,9 +16,13 @@ use crate::{
     resident::schema::{
         ResidentProfileDto, AddHomeDetailsSchema, UpdateResidentProfileSchema, UpdatePfpParams,
         VisitorResidentDto, SaveVisitorSchema,
+        SaveNoticeSchema,
         AdminResidentDto, AdminSecurityDto
     }
 };
+
+use super::schema::NoticeDto;
+
 
 
 // App entry
@@ -454,4 +458,102 @@ pub async fn get_security_by_society(
             ).into_response();
         }
     }
+}
+
+
+// Notices
+pub async fn get_notices(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+   let email = headers.get("email").unwrap().to_str().unwrap();
+
+   let get_notices_query = sqlx::query_as::<_, NoticeDto>("
+        SELECT title, body, posted 
+        FROM notices
+        WHERE society_id = (
+            SELECT society_id 
+            FROM users
+            WHERE email = ?
+        )
+    ")
+       .bind(email);
+
+   match get_notices_query
+       .fetch_all(&data.db)
+       .await  {
+        Ok(notices) => {
+            return (
+                axum::http::StatusCode::OK,
+                Json(notices)
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("Couldn't get notices data {}", err);
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not fetch notices details"
+                }))
+            ).into_response();
+        }   
+    };
+}
+
+pub async fn add_notice(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<SaveNoticeSchema>
+) -> impl IntoResponse{
+    let email = headers.get("admin").unwrap().to_str().unwrap();
+
+    let get_society_query = sqlx::query("SELECT society_id FROM users WHERE email = ?")
+        .bind(email)
+        .fetch_one(&data.db)
+        .await;
+
+    let society_id = match get_society_query {
+            Ok(resident) => {
+                resident.try_get::<i32, _>("society_id").unwrap()
+            }
+            Err(err) => {
+                dbg!("Could not find society: {}", err);
+                    return (
+                        axum::http::StatusCode::UNAUTHORIZED,
+                        Json(json!({
+                            "err": "Your society could not be found"
+                        }))
+                    ).into_response();
+            }
+        };
+
+    let add_notice_query = sqlx::query("
+        INSERT INTO notices (title, body, society_id) VALUES (
+            ?, ?, ?
+        )
+    ")
+        .bind(payload.title)
+        .bind(payload.body)
+        .bind(society_id);
+
+    match add_notice_query
+        .execute(&data.db)
+        .await{
+            Ok(_) => {
+                return (
+                    axum::http::StatusCode::CREATED,
+                    Json(json!({
+                        "msg": "Notice added"
+                    }))
+                ).into_response();
+            }
+            Err(err) => {
+                dbg!("Failed to add notice: {:?}", err);
+                return (axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({
+                        "err": "Failed to add notice"
+                    }))
+                ).into_response();
+            }
+    };
 }
