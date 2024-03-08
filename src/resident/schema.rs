@@ -70,13 +70,15 @@ pub struct SaveVisitorSchema {
 #[derive(Debug, Deserialize)]
 pub struct SaveNoticeSchema {
     pub title: String,
-    pub body: String
+    pub body: String,
+    pub category: String
 }
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct NoticeDto {
     pub title: String,
     pub body: String,
+    pub category: String,
     pub posted: DateTime<chrono::Utc>
 }
 
@@ -102,4 +104,21 @@ pub struct AdminSecurityDto {
     pub email: String,
     #[serde(rename= "badgeId")]
     pub badge_id: Option<String>
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct RegularDto {
+    pub name: String,
+    pub role: String,
+    pub entry: String,
+    pub departure: String,
+    pub code: String
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveRegularSchema {
+    pub name: String,
+    pub role: String,
+    pub entry: String,
+    pub departure: String
 }

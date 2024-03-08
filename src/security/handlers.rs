@@ -285,9 +285,9 @@ pub async fn update_security_profile(
     
     let query = format!("
             UPDATE securities
-            SET badge_id = '{}', phone_no = '{}'
+            SET name = '{}', phone_no = '{}'
             WHERE email = {:?}
-        ", payload.badge_id, payload.phone_no, headers.get("email").unwrap());
+        ", payload.name, payload.phone_no, headers.get("email").unwrap());
 
     let query_result = sqlx::query(&query)
         .execute(&data.db)

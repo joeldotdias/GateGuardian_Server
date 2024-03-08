@@ -12,6 +12,7 @@ use crate::{
         add_resident_home_details, update_resident_profile,  update_resident_pfp,
         add_notice, get_notices,
         get_visitors, save_visitor, get_recent_visitor_otp,
+        get_regulars, save_regular,
         get_residents_by_society, get_security_by_society
     }
 };
@@ -27,6 +28,8 @@ pub fn provide_resident_routes(app_state: &Arc<AppState>) -> Router {
         .route("/update-pfp", put(update_resident_pfp))
         .route("/visitors", get(get_visitors))
         .route("/visitor-save", post(save_visitor))
+        .route("/regulars", get(get_regulars))
+        .route("/regular-save", post(save_regular))
         .route("/admin/notice-save", post(add_notice))
         .route("/notices", get(get_notices))
         .route("/visitor-recent", get(get_recent_visitor_otp))

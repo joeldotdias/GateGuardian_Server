@@ -53,8 +53,7 @@ pub struct VerifiedVisitorDetails {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSecurityProfileSchema {
-    #[serde(rename="badgeId")]
-    pub badge_id: String,
+    pub name: String,
     #[serde(rename="phoneNo")]
     pub phone_no: String
 }

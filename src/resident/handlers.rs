@@ -19,7 +19,8 @@ use crate::{
     resident::schema::{
         ResidentProfileDto, DashProfileDetails,
         AddHomeDetailsSchema,    UpdatePfpParams, UpdateResidentProfileSchema, 
-        SaveVisitorSchema, VisitorResidentDto, SaveNoticeSchema, NoticeDto, 
+        SaveVisitorSchema, VisitorResidentDto, SaveNoticeSchema, NoticeDto,
+        RegularDto, SaveRegularSchema,
         AdminResidentDto, AdminSecurityDto,
     },
     sanitize_headers
@@ -511,6 +512,129 @@ pub async fn get_recent_visitor_otp(
         };
 }
 
+pub async fn get_regulars(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap
+) -> impl IntoResponse {
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
+
+    let get_regulars_query = query_as::<_, RegularDto>("
+        SELECT r.name, r.role, r.entry, r.departure, r.code
+        FROM regulars r 
+        WHERE r.resident_email = ?
+    ")
+    .bind(email);
+
+    let regulars_query_result = get_regulars_query
+        .fetch_all(&data.db)
+        .await;
+
+    match regulars_query_result {
+        Ok(regulars) => {
+            return (
+                StatusCode::OK,
+                Json(regulars)
+            ).into_response();
+        }
+        Err(err) => {
+            dbg!("Couldn't get regulars data {}", err);
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not fetch regulars details"
+                }))
+            ).into_response();
+        }
+    }
+}
+
+pub async fn save_regular(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<SaveRegularSchema>
+) -> impl IntoResponse {
+
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
+
+    let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
+        .bind(&email);
+    
+    let society_id_query_result = society_id_query
+        .fetch_one(&data.db)
+        .await;
+    
+    let society_id = match society_id_query_result {
+        Ok(resident) => {
+            resident.try_get::<i32, _>("society_id").unwrap()
+        }
+        Err(err) => {
+            dbg!("Couldn't read resident data {}", err);
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": "Could not find resident details"
+                }))
+            ).into_response();
+        }
+    };
+
+    let code = rand::thread_rng().gen_range(100000..=999999);
+
+    let save_regular_query = query(r#"
+        INSERT INTO regulars (society_id, name, role, entry, departure, resident_email, code)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    "#)
+    .bind(society_id)
+    .bind(payload.name)
+    .bind(payload.role)
+    .bind(payload.entry)
+    .bind(payload.departure)
+    .bind(&email)
+    .bind(code.to_string());
+    
+    match save_regular_query
+        .execute(&data.db)
+        .await {
+            Ok(_) => {
+                return (
+                    StatusCode::OK,
+                    Json(json!({
+                        "msg": "Regular saved successfully"
+                    }))
+                ).into_response();
+            }
+            Err(err) => {
+                dbg!("Couldn't save regular {}", err);
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "err": "Could not save regular details"
+                    }))
+                ).into_response();
+            }
+    }
+}
+
 
 // Admin
 pub async fn get_residents_by_society(
@@ -518,7 +642,7 @@ pub async fn get_residents_by_society(
     headers: HeaderMap
 ) -> impl IntoResponse {
     
-    let email = match sanitize_headers(headers, "email"){
+    let email = match sanitize_headers(headers, "admin"){
         Ok(header) => header,
         Err(err) => {
             return (
@@ -569,7 +693,7 @@ pub async fn get_security_by_society(
     headers: HeaderMap
 ) -> impl IntoResponse {
 
-    let email = match sanitize_headers(headers, "email"){
+    let email = match sanitize_headers(headers, "admin"){
         Ok(header) => header,
         Err(err) => {
             return (
@@ -635,7 +759,7 @@ pub async fn get_notices(
     };
 
    let get_notices_query = query_as::<_, NoticeDto>("
-        SELECT title, body, posted 
+        SELECT title, body, category, posted
         FROM notices
         WHERE society_id = (
             SELECT society_id 
@@ -672,7 +796,7 @@ pub async fn add_notice(
     Json(payload): Json<SaveNoticeSchema>
 ) -> impl IntoResponse{
     
-    let email = match sanitize_headers(headers, "email"){
+    let email = match sanitize_headers(headers, "admin"){
         Ok(header) => header,
         Err(err) => {
             return (
@@ -705,12 +829,13 @@ pub async fn add_notice(
         };
 
     let add_notice_query = query("
-        INSERT INTO notices (title, body, society_id) VALUES (
+        INSERT INTO notices (title, body, category, society_id) VALUES (
             ?, ?, ?
         )
     ")
         .bind(payload.title)
         .bind(payload.body)
+        .bind(payload.category)
         .bind(society_id);
 
     match add_notice_query
