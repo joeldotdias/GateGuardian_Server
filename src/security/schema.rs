@@ -4,37 +4,37 @@ use sqlx::FromRow;
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct SecurityProfileDto {
-    pub name: String,
+    name: String,
     #[serde(rename= "badgeId")]
-    pub badge_id: String,
+    badge_id: String,
     #[serde(rename= "phoneNo")]
-    pub phone_no: String,
+    phone_no: String,
     #[serde(rename= "pfpUrl")]
-    pub pfp_url: Option<String>,
-    pub society: String
+    pfp_url: Option<String>,
+    society: String
 }
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct VisitorSecurityDto {
     #[serde(rename="visitorId")]
-    pub visitor_id: i32,
-    pub name: String,
+    visitor_id: i32,
+    name: String,
     #[serde(rename="hostFlat")]
-    pub host_flat: i32,
+    host_flat: i32,
     #[serde(rename="hostBuilding")]
-    pub host_building: String,
-    pub society: String,
-    pub code: String
+    host_building: String,
+    society: String,
+    code: String
 }
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct VisitorLogDto {
-    pub name: String,
+    name: String,
     #[serde(rename="hostFlat")]
-    pub host_flat: i32,
+    host_flat: i32,
     #[serde(rename="hostBuilding")]
-    pub host_building: String,
-    pub entry: DateTime<chrono::Utc>
+    host_building: String,
+    entry: DateTime<chrono::Utc>
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,11 +43,34 @@ pub struct VerifiedVisitorParams {
     pub visitor_id: i32
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OOParams {
+    #[serde(rename = "flatNo")]
+    pub flat_no: String,
+    pub building: String
+}
+
 #[derive(Debug, FromRow)]
 pub struct VerifiedVisitorDetails {
     pub name: String,
     pub phone_no: String,
     pub resident_id: i32,
+}
+
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct ResidentDetails {
+    name: String,
+    #[serde(rename = "phoneNo")]
+    phone_no: String
+}
+
+#[derive(Debug, FromRow, Serialize)]
+pub struct SecurityRegularDto {
+    name: String,
+    role: String,
+    entry: String,
+    code: String
 }
 
 

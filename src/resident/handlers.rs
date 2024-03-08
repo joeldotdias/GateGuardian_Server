@@ -529,7 +529,7 @@ pub async fn get_regulars(
     };
 
     let get_regulars_query = query_as::<_, RegularDto>("
-        SELECT r.name, r.role, r.entry, r.departure, r.code
+        SELECT r.name, r.role, r.entry, r.code
         FROM regulars r 
         WHERE r.resident_email = ?
     ")
@@ -601,14 +601,13 @@ pub async fn save_regular(
     let code = rand::thread_rng().gen_range(100000..=999999);
 
     let save_regular_query = query(r#"
-        INSERT INTO regulars (society_id, name, role, entry, departure, resident_email, code)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO regulars (society_id, name, role, entry, resident_email, code)
+        VALUES (?, ?, ?, ?, ?, ?)
     "#)
     .bind(society_id)
     .bind(payload.name)
     .bind(payload.role)
     .bind(payload.entry)
-    .bind(payload.departure)
     .bind(&email)
     .bind(code.to_string());
     
@@ -633,6 +632,56 @@ pub async fn save_regular(
                 ).into_response();
             }
     }
+}
+
+pub async fn get_recent_regular_otp(
+    State(data): State<Arc<AppState>>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+
+    let email = match sanitize_headers(headers, "email"){
+        Ok(header) => header,
+        Err(err) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "err": err
+                }))
+            ).into_response();
+        }
+    };
+
+    
+    let get_code_query = query("
+        SELECT code FROM regulars
+        WHERE resident_email = ?
+        ORDER BY regular_id DESC
+    ")
+    .bind(email);
+
+    let get_code_query_result = get_code_query
+        .fetch_one(&data.db)
+        .await;
+    
+        match get_code_query_result {
+            Ok(regular) => {
+                return(
+                    StatusCode::OK,
+                    Json(json!({
+                        "code": regular.try_get::<String, _>("code").unwrap_or_default()
+                    }))
+                ).into_response();
+            }
+            Err(err) => {
+                dbg!("Couldn't read data {}", err);
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "err": "Could not find regular details"
+                    }))
+                ).into_response();
+            }
+        };
 }
 
 

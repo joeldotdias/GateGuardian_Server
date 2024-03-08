@@ -8,7 +8,7 @@ use axum::{
 use crate::{
     config::AppState,
     security::handlers::{
-        get_security_by_email,
+        get_security_by_email, get_regulars, get_residents_to_notify,
         get_visitors, verified_visitor_to_logs, get_visitor_logs,
         update_security_profile, update_security_pfp
     }
@@ -22,6 +22,8 @@ pub fn provide_security_routes(app_state: &Arc<AppState>) -> Router {
         .route("/visitors", get(get_visitors))
         .route("/visitor-verified", post(verified_visitor_to_logs))
         .route("/visitor-logs", get(get_visitor_logs))
+        .route("/regulars", get(get_regulars))
+        .route("/notify", get(get_residents_to_notify))
         .route("/update-profile", put(update_security_profile))
         .route("/update-pfp", put(update_security_pfp))
         .with_state(app_state.clone())

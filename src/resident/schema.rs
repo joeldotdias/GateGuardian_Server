@@ -4,17 +4,17 @@ use chrono::DateTime;
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct ResidentProfileDto {
-    pub name: String,
+    name: String,
     #[serde(rename= "pfpUrl")]
-    pub pfp_url: Option<String>,
+    pfp_url: Option<String>,
     #[serde(rename= "aboutMe")]
-    pub about_me: Option<String>,
+    about_me: Option<String>,
     #[serde(rename= "phoneNo")]
-    pub phone_no: Option<String>,
+    phone_no: Option<String>,
     #[serde(rename= "flatNo")]
-    pub flat_no: Option<i32>,
-    pub building: Option<String>,
-    pub society: String
+    flat_no: Option<i32>,
+    building: Option<String>,
+    society: String
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,25 +39,25 @@ pub struct UpdatePfpParams {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct DashProfileDetails {
-    pub name: String,
+    name: String,
     #[serde(rename="flatNo")]
-    pub flat_no: i32,
-    pub building: String,
+    flat_no: i32,
+    building: String,
     #[serde(rename="pfpUrl")]
-    pub pfp_url: String
+    pfp_url: String
 }
 
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct VisitorResidentDto {
     #[serde(rename="visitorId")]
-    pub visitor_id: i32,
-    pub name: String,
+    visitor_id: i32,
+    name: String,
     #[serde(rename="phoneNo")]
-    pub phone_no: String,
+    phone_no: String,
     #[serde(rename="hostEmail")]
-    pub host_email: String,
-    pub code: String
+    host_email: String,
+    code: String
 }
 
 #[derive(Debug, FromRow, Deserialize, )]
@@ -76,10 +76,10 @@ pub struct SaveNoticeSchema {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct NoticeDto {
-    pub title: String,
-    pub body: String,
-    pub category: String,
-    pub posted: DateTime<chrono::Utc>
+    title: String,
+    body: String,
+    category: String,
+    posted: DateTime<chrono::Utc>
 }
 
 
@@ -91,34 +91,32 @@ pub struct SavePersonSchema {
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct AdminResidentDto {
-    pub name: String,
-    pub email: String,
+    name: String,
+    email: String,
     #[serde(rename= "flatNo")]
-    pub flat_no: Option<i32>,
-    pub building: Option<String>
+    flat_no: Option<i32>,
+    building: Option<String>
 }
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct AdminSecurityDto {
-    pub name: String,
-    pub email: String,
+    name: String,
+    email: String,
     #[serde(rename= "badgeId")]
-    pub badge_id: Option<String>
+    badge_id: Option<String>
 }
 
 #[derive(Debug, FromRow, Serialize)]
 pub struct RegularDto {
-    pub name: String,
-    pub role: String,
-    pub entry: String,
-    pub departure: String,
-    pub code: String
+    name: String,
+    role: String,
+    entry: String,
+    code: String
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SaveRegularSchema {
     pub name: String,
     pub role: String,
-    pub entry: String,
-    pub departure: String
+    pub entry: String
 }
