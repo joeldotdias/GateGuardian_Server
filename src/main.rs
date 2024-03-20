@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use dotenv::dotenv;
 
 use ggserver_in_rust::{
     config::{ Config, AppState },
@@ -9,8 +8,7 @@ use ggserver_in_rust::{
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-    let config = Config::env_config();
+    let config = Config::from_env();
     
     let pool = database::db_connection(&config.database_url).await;
 

@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{State, Query },
-    http::{
-        header::HeaderMap,
-        StatusCode
-    },
+    extract::{Query, State },
+    http::StatusCode,
     response::IntoResponse,
+    Extension,
     Json
 };
 use serde_json::json;
@@ -14,34 +12,22 @@ use sqlx::{ query, query_as, Row };
 
 use crate::{
     config::AppState,
-    sanitize_headers,
+    middleware::CurrUser,
     security::schema::{
-            SecurityProfileDto, SecurityRegularDto, UpdatePfpParams, ResidentDetails,
-            UpdateSecurityProfileSchema, VerifiedVisitorDetails, VerifiedVisitorParams, VisitorLogDto, VisitorSecurityDto
-        }
+        SecurityProfileDto, SecurityRegularDto, UpdatePfpParams, ResidentDetails, NotifyParams,
+        UpdateSecurityProfileSchema, VerifiedVisitorDetails, VerifiedVisitorParams, VisitorLogDto, VisitorSecurityDto
+    }
 };
-
-use super::schema::OOParams;
 
 
 // App entry
 pub async fn get_security_by_email(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap
+    Extension(curr_user): Extension<CurrUser>
 ) -> impl IntoResponse {
 
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+    let email =  curr_user.email;
+
     let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
         .bind(&email);
 
@@ -53,61 +39,51 @@ pub async fn get_security_by_email(
             }
             Err(err) => {
                 dbg!("Could not find society: {}", err);
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        Json(json!({
-                            "err": "Your society could not be found"
-                        }))
-                    ).into_response();
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({
+                        "err": "Your society could not be found"
+                    }))
+                ).into_response();
             }
     };
 
     let get_security_query = query_as::<_, SecurityProfileDto>("
-        SELECT u.name, s.badge_id, s.phone_no, s.pfp_url, soc.society_name AS society 
-        FROM users u, securities s, societies soc 
+        SELECT u.name, s.badge_id, s.phone_no, s.pfp_url, soc.society_name AS society
+        FROM users u, securities s, societies soc
         WHERE s.email = ? AND u.email = ? AND soc.society_id = ?;
     ")
     .bind(&email)
     .bind(&email)
     .bind(society_id);
-    
+
     match get_security_query
         .fetch_one(&data.db)
         .await {
             Ok(security) => {
-                return (StatusCode::OK, Json(security)).into_response();
+                (StatusCode::OK, Json(security)).into_response()
             }
             Err(err) => {
                 dbg!("Error: {}", err);
-                return(
+                (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({
                         "err": "Could not fetch security data"
                     }))
-                ).into_response();
-            }     
-    };
+                ).into_response()
+            }
+    }
 }
 
 
 // Visitors
 pub async fn get_visitors(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap
+    Extension(curr_user): Extension<CurrUser>
 ) -> impl IntoResponse {
-    
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+
+    let email =  curr_user.email;
+
     let security_society_query = query("SELECT society_id from users WHERE email = ?")
         .bind(email);
 
@@ -125,13 +101,13 @@ pub async fn get_visitors(
             ).into_response();
         }
     };
-    
+
     let get_visitors_query = query_as::<_, VisitorSecurityDto>("
         SELECT v.visitor_id, v.name, r.flat_no AS host_flat, r.building AS host_building, soc.society_name AS society, v.code
         FROM visitors v, residents r, societies soc
         WHERE r.email IN (
-            SELECT r.email 
-            FROM residents r NATURAL JOIN users u 
+            SELECT r.email
+            FROM residents r NATURAL JOIN users u
             WHERE u.society_id = ?
         ) AND v.resident_id = r.resident_id AND soc.society_id = ?
     ")
@@ -144,19 +120,19 @@ pub async fn get_visitors(
 
     match query_result {
         Ok(visitors) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(visitors)
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
             dbg!("Could not fetch visitors data: {}", err);
-            return (
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
                     "err": "Could not fetch visitors data"
                 }))
-            ).into_response();
+            ).into_response()
         }
     }
 }
@@ -165,7 +141,7 @@ pub async fn verified_visitor_to_logs(
     State(data): State<Arc<AppState>>,
     Json(payload): Json<VerifiedVisitorParams>
 ) -> impl IntoResponse {
-    
+
     let visitor_id = payload.visitor_id;
 
     let get_visitor_data_query = query_as::<_, VerifiedVisitorDetails>("
@@ -174,7 +150,7 @@ pub async fn verified_visitor_to_logs(
         WHERE v.visitor_id = ?
     ")
     .bind(visitor_id);
-    
+
     let visitor_data = match get_visitor_data_query
         .fetch_one(&data.db)
         .await {
@@ -189,13 +165,13 @@ pub async fn verified_visitor_to_logs(
                 ).into_response();
             }
     };
-    
+
     let remove_from_visitors_query = query("
             DELETE FROM visitors
             WHERE visitor_id = ?
         ")
         .bind(visitor_id);
-    
+
     let remove_visitor_result = remove_from_visitors_query
         .execute(&data.db)
         .await;
@@ -220,47 +196,37 @@ pub async fn verified_visitor_to_logs(
     .bind(visitor_data.name)
     .bind(visitor_data.phone_no)
     .bind(visitor_data.resident_id);
-    
+
     match add_visitor_to_logs_query
         .execute(&data.db)
         .await {
             Ok(_) => {
-                return (
+                (
                     StatusCode::OK,
                     Json(json!({
                         "msg": "Successfully moved visitor to logs"
                     }))
-                ).into_response();
+                ).into_response()
             }
             Err(err) => {
                 dbg!("Could not move visitor to logs: {}", err);
-                return (
+                (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(json!({
                         "err": "Could not move visitor to logs"
                     }))
-                ).into_response();
+                ).into_response()
             }
     }
 }
 
 pub async fn get_visitor_logs(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap
+    Extension(curr_user): Extension<CurrUser>
 ) -> impl IntoResponse {
-    
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+
+    let email =  curr_user.email;
+
     let security_society_query = query("SELECT society_id from users WHERE email = ?")
         .bind(email);
 
@@ -278,15 +244,16 @@ pub async fn get_visitor_logs(
             ).into_response();
         }
     };
-    
+
     let get_visitor_logs_query = query_as::<_, VisitorLogDto>("
         SELECT vl.log_id, vl.name, r.flat_no as host_flat, r.building as host_building, soc.society_name AS host_society, vl.entry
         FROM visitor_logs vl, residents r, societies soc
         WHERE r.email IN (
-            SELECT r.email 
-            FROM residents r NATURAL JOIN users u 
+            SELECT r.email
+            FROM residents r NATURAL JOIN users u
             WHERE u.society_id = ?
-        ) AND vl.resident_id = r.resident_id AND soc.society_id = ?;
+        ) AND vl.resident_id = r.resident_id AND soc.society_id = ?
+        ORDER BY vl.log_id DESC
     ")
     .bind(security_society)
     .bind(security_society);
@@ -297,19 +264,19 @@ pub async fn get_visitor_logs(
 
     match query_result {
         Ok(visitor_logs) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(visitor_logs)
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
             dbg!("Could not fetch visitor logs data: {}", err);
-            return (
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
                     "err": "Could not fetch visitor logs data"
                 }))
-            ).into_response();
+            ).into_response()
         }
     }
 }
@@ -319,21 +286,11 @@ pub async fn get_visitor_logs(
 // Notify
 pub async fn get_residents_to_notify(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap,
-    Query(params): Query<OOParams>
+    Extension(curr_user): Extension<CurrUser>,
+    Query(params): Query<NotifyParams>
 ) -> impl IntoResponse {
-    
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
+
+    let email = curr_user.email;
 
     let security_society_query = query("SELECT society_id from users WHERE email = ?")
         .bind(email);
@@ -389,21 +346,11 @@ pub async fn get_residents_to_notify(
 // Regulars
 pub async fn get_regulars(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap
+    Extension(curr_user): Extension<CurrUser>,
 ) -> impl IntoResponse {
-    
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+
+    let email = curr_user.email;
+
     let security_society_query = query("SELECT society_id from users WHERE email = ?")
         .bind(email);
 
@@ -421,10 +368,10 @@ pub async fn get_regulars(
             ).into_response();
         }
     };
-    
+
     let get_visitor_logs_query = query_as::<_, SecurityRegularDto>("
-        SELECT r.name,r.role, r.entry, r.code 
-        FROM regulars r 
+        SELECT r.name,r.role, r.entry, r.code
+        FROM regulars r
         WHERE r.society_id = ?
     ")
     .bind(security_society);
@@ -435,19 +382,19 @@ pub async fn get_regulars(
 
     match query_result {
         Ok(regulars) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(regulars)
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
             dbg!("Could not fetch regulars data: {}", err);
-            return (
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
                     "err": "Could not fetch regulars data"
                 }))
-            ).into_response();
+            ).into_response()
         }
     }
 }
@@ -456,22 +403,12 @@ pub async fn get_regulars(
 // Profile
 pub async fn update_security_profile(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap,
+    Extension(curr_user): Extension<CurrUser>,
     Json(payload): Json<UpdateSecurityProfileSchema>
 ) -> impl IntoResponse {
-    
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+
+    let email =  curr_user.email;
+
     let update_profile_query = query("
             UPDATE securities
             SET name = ?, phone_no = ?
@@ -487,43 +424,33 @@ pub async fn update_security_profile(
 
     match query_result {
         Ok(_) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(json!({
                     "message": "Profile updated successfully"
                 }))
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
             dbg!("Could not update profile: {}", err);
-            return (
+            (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update profile"
                 }))
-            ).into_response();
+            ).into_response()
         }
     }
 }
 
 pub async fn update_security_pfp(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap,
+    Extension(curr_user): Extension<CurrUser>,
     Json(payload): Json<UpdatePfpParams>
 ) -> impl IntoResponse {
 
-    let email =  match sanitize_headers(headers, "email") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
-    
+    let email =  curr_user.email;
+
     let update_pfp_query = query("
             UPDATE securities
             SET pfp_url = ?
@@ -531,28 +458,28 @@ pub async fn update_security_pfp(
         ")
         .bind(payload.pfp_url.to_string())
         .bind(email);
-    
+
     let query_result = update_pfp_query
         .execute(&data.db)
         .await;
 
     match query_result {
         Ok(_) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(json!({
                     "message": "Pfp updated successfully"
                 }))
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
             dbg!("err: {}", err);
-            return (
+            (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
                     "err": "Could not update pfp"
                 }))
-            ).into_response();
+            ).into_response()
         }
     }
 }

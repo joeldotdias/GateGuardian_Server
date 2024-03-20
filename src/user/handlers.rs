@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use axum::{
     extract::{ Query, State },
+    http::StatusCode,
     response::IntoResponse,
-    http::{ StatusCode, HeaderMap },
+    Extension,
     Json
 };
 use serde_json::json;
@@ -11,7 +12,7 @@ use sqlx::{ query, query_as, Row };
 
 use crate::{
     config::AppState,
-    sanitize_headers,
+    middleware::CurrUser,
     user::{
         model::User,
         schema::{ CreateUserSchema, GetUserParams }
@@ -50,7 +51,7 @@ pub async fn get_user(
 
 pub async fn create_user(
     State(data): State<Arc<AppState>>,
-    headers: HeaderMap,
+    Extension(curr_user): Extension<CurrUser>,
     Json(payload): Json<CreateUserSchema>,
 ) -> impl IntoResponse {
 
@@ -58,17 +59,7 @@ pub async fn create_user(
     let email = payload.email.as_str();
     let category = payload.category.as_str();
     
-    let admin =  match sanitize_headers(headers, "admin") {
-        Ok(header) => header,
-        Err(err) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": err
-                }))
-            ).into_response();
-        }   
-    };
+    let admin =  curr_user.email;
 
     let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
         .bind(admin);

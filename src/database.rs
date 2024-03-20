@@ -1,5 +1,7 @@
 use sqlx::{
-    mysql::MySqlPoolOptions, Pool, MySql
+    mysql::MySqlPoolOptions,
+    Pool,
+    MySql
 };
 
 pub async fn db_connection(database_url: &str) -> Pool<MySql>{
@@ -17,5 +19,5 @@ pub async fn db_connection(database_url: &str) -> Pool<MySql>{
             }  
     };
     
-    pool.clone()
+    pool
 }

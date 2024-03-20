@@ -1,19 +1,17 @@
 use std::sync::Arc;
 
 use axum::{
-    routing::{ get, post, put },
-    Router
+    middleware, routing::{ get, post, put }, Router
 };
 
 use crate::{
     config::AppState,
+    middleware::sanitize_headers,
     resident::handlers::{
-        get_resident_by_email, get_dashboard_details,
-        add_resident_home_details, update_resident_profile,  update_resident_pfp,
-        add_notice, get_notices,
-        get_visitors, save_visitor, get_recent_visitor_otp,
-        get_regulars, save_regular, get_recent_regular_otp,
-        get_residents_by_society, get_security_by_society
+        add_notice, add_resident_home_details, get_dashboard_details, get_notices,
+        get_recent_regular_otp, get_recent_visitor_otp, get_regulars, get_resident_by_email,
+        get_residents_by_society, get_security_by_society, get_visitors, save_regular,
+        save_visitor, update_resident_pfp, update_resident_profile
     }
 };
 
@@ -36,5 +34,6 @@ pub fn provide_resident_routes(app_state: &Arc<AppState>) -> Router {
         .route("/notices", get(get_notices))
         .route("/admin/residents", get(get_residents_by_society))
         .route("/admin/securities", get(get_security_by_society))
-        .with_state(app_state.clone())
+        .route_layer(middleware::from_fn(sanitize_headers))
+        .with_state(Arc::clone(app_state))
 }

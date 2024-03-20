@@ -44,7 +44,7 @@ pub struct VerifiedVisitorParams {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct OOParams {
+pub struct NotifyParams {
     #[serde(rename = "flatNo")]
     pub flat_no: String,
     pub building: String
