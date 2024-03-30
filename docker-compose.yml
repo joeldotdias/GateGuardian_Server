@@ -3,8 +3,9 @@ version: '3'
 services:
   server:
     image: joeldotdias/gateg
-    env_file:
-      - ./.env
+    environment:
+      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@squeel:3306/${MYSQL_DATABASE}
+      - SOCKET_ADDR=0.0.0.0:6969
     build: 
       context: .
       dockerfile: Dockerfile
