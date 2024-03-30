@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
-use ggserver_in_rust::{
+use ggserver::{
     config::{ AppState, Config },
     database,
     router,

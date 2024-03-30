@@ -10,8 +10,9 @@ impl Config {
     pub fn from_env() -> Self {
         dotenv().ok();
 
-        let socket_addr = std::env::var("SOCKET_ADDR")
-            .expect("KINDLY SET THE PORT");
+        // let socket_addr = std::env::var("SOCKET_ADDR")
+        //     .expect("KINDLY SET THE PORT");
+        let socket_addr = "0.0.0.0:6969".to_string();
         let database_url = std::env::var("DATABASE_URL")
             .expect("KINDLY SET THE DATABASE URL");
           

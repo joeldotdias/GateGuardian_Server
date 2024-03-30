@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  server:
+    image: joeldotdias/gateg
+    env_file:
+      - ./.env
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '6969:6969'
+    depends_on:
+      - squeel
+  
+  squeel:
+    image: mysql:8.0
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - '3376:3306'
+    volumes:
+      - mysqlDB:/var/lib/mysql
+
+volumes:
+  mysqlDB:
+    driver: local
