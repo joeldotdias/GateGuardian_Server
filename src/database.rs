@@ -5,9 +5,9 @@ use sqlx::{
 };
 
 pub async fn db_connection(database_url: &str) -> Pool<MySql>{
-    let pool = match MySqlPoolOptions::new()
+    match MySqlPoolOptions::new()
         .max_connections(69)
-        .connect(&database_url)
+        .connect(database_url)
         .await {
             Ok(pool) => {
                 println!("Data Be Based");
@@ -17,7 +17,5 @@ pub async fn db_connection(database_url: &str) -> Pool<MySql>{
                 dbg!("Data Be Soy: {}", err);
                 std::process::exit(1);
             }  
-    };
-    
-    pool
+    }
 }

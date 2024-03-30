@@ -1,11 +1,9 @@
 use axum::{
     extract::Request,
-    http::{ Method, StatusCode },
+    http::Method,
     middleware::Next,
     response::{IntoResponse, Response},
-    Json
 };
-use serde_json::json;
 use tower_http::{
     trace::{ self, TraceLayer },
     cors::{ Any, CorsLayer },
@@ -13,14 +11,16 @@ use tower_http::{
 };
 use tracing::Level;
 
+use crate::error::GGError;
+
 #[derive(Clone)]
 pub struct CurrUser {
     pub email: String
 }
 
-impl From<&str> for CurrUser {
-    fn from(email: &str) -> Self {
-        CurrUser { email: email.into() }
+impl From<String> for CurrUser {
+    fn from(email: String) -> Self {
+        CurrUser { email }
     }
 }
 
@@ -32,15 +32,13 @@ pub async fn sanitize_headers(mut req: Request, next: Next) -> Result<Response, 
     let header_str = if let Some(header_val) = header_val {
         header_val.to_owned()
     } else {
-        return Err((
-            StatusCode::PRECONDITION_FAILED,
-            Json(json!({
-                "err": "Did not detect the required headers"
-            }))
-        ).into_response());
+        return Err(
+            GGError::NecessaryHeadersAbsent.into_response()
+        );
     };
+    println!("{}", &header_str);
 
-    req.extensions_mut().insert(CurrUser::from(header_str.as_str()));
+    req.extensions_mut().insert(CurrUser::from(header_str));
     Ok(next.run(req).await)
 }
 
@@ -50,8 +48,8 @@ pub fn cors_layer() -> CorsLayer {
         .allow_origin(Any)
 }
 
-pub fn logger()  -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>>{
-    println!("Logs");
+pub fn logger() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>>{
+    println!("HERE BE THE LOGS");
     TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::new()
             .level(Level::INFO))

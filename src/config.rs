@@ -6,8 +6,6 @@ pub struct Config {
     pub database_url: String,
 }
 
-
-
 impl Config {
     pub fn from_env() -> Self {
         dotenv().ok();
@@ -24,6 +22,13 @@ impl Config {
     }
 }
 
+
 pub struct AppState {
     pub db: Pool<MySql>
+}
+
+impl AppState {
+    pub fn new(db: Pool<MySql>) -> Self {
+        Self { db }
+    }
 }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{ Query, State },
+    extract::State,
     http::StatusCode,
     response::IntoResponse,
     Extension,
@@ -12,43 +12,42 @@ use sqlx::{ query, query_as, Row };
 
 use crate::{
     config::AppState,
+    error::GGError,
     middleware::CurrUser,
     user::{
         model::User,
-        schema::{ CreateUserSchema, GetUserParams }
+        schema::CreateUserSchema
     }
 };
 
 pub async fn get_user(
     State(data): State<Arc<AppState>>,
-    Query(params): Query<GetUserParams>,
+    Extension(curr_user): Extension<CurrUser>
 ) -> impl IntoResponse {
-    
-    let query = format!("
+    println!("{}", curr_user.email);
+
+    let user_query = query_as::<_, User>("
         SELECT u.user_id, u.name, u.email, u.category, soc.society_name AS society 
         FROM users AS u INNER JOIN societies AS soc ON u.society_id = soc.society_id 
-        WHERE u.email = '{}'",params.email);
+        WHERE u.email = ?
+    ")
+    .bind(curr_user.email)
+    .fetch_one(&data.db)
+    .await;
 
-    let query_result = query_as::<_, User>(&query)
-        .fetch_one(&data.db)
-        .await;
-
-    match query_result {
+    match user_query {
         Ok(user) => {
-            return (StatusCode::OK, Json(user)).into_response();
+            (StatusCode::OK, Json(user)).into_response()
         }
         Err(err) => {
-            dbg!("Error: {}", err);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch user"
-                }))
-            ).into_response();
+            eprintln!("Error: {}", err);
+            GGError::DefunctCredentials("Could not fetch user details".into()).into_response()
         }
-    };
+    }
 }
 
+// explicit returns make it way more readable in this fn
+#[allow(clippy::needless_return)]
 pub async fn create_user(
     State(data): State<Arc<AppState>>,
     Extension(curr_user): Extension<CurrUser>,
@@ -59,7 +58,7 @@ pub async fn create_user(
     let email = payload.email.as_str();
     let category = payload.category.as_str();
     
-    let admin =  curr_user.email;
+    let admin = curr_user.email;
 
     let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
         .bind(admin);
@@ -71,13 +70,8 @@ pub async fn create_user(
                 admin.try_get::<i32, _>("society_id").unwrap()
             }
             Err(err) => {
-                dbg!("Could not add resident: {}", err);
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        Json(json!({
-                            "err": "This society has not yet been registered"
-                        }))
-                    ).into_response();
+                eprintln!("Could not add resident: {}", err);
+                    return GGError::DefunctCredentials("Your society has not been registered yet".into()).into_response();
             }
     };
     
@@ -91,23 +85,17 @@ pub async fn create_user(
     .bind(category)
     .execute(&data.db)
     .await;
-    
-    match query_result {
-        Err(err) => {
-            dbg!("Could not add to the users table {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Failed to register user"
-                }))
-            ).into_response();
-        }
-        _ => {}
+
+    if let Err(err) = query_result {
+        eprintln!("Could not add to the users table {}", err);
+        return GGError::RegistrationFailure("Failed to register user".into()).into_response();
     }
     
     match category {
         "resident" | "admin" => {
-            let add_resident_query = query(r#"INSERT INTO residents ( email) VALUES (?)"#)
+            let add_resident_query = query(r#"
+                INSERT INTO residents (email) VALUES (?)
+            "#)
                 .bind(email)
                 .execute(&data.db)
                 .await;
@@ -122,19 +110,16 @@ pub async fn create_user(
                     ).into_response();
                 }
                 Err(err) => {
-                    dbg!("Could not add resident: {}", err);
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(json!({
-                            "err": "Failed to register resident"
-                        }))
-                    ).into_response();
+                    eprintln!("Could not add resident: {}", err);
+                    return GGError::RegistrationFailure("Failed to register resident".into()).into_response();
                 }
             }
         }
 
         "security" => {
-            let add_security_query = query(r#"INSERT INTO securities (email) VALUES (?)"#)
+            let add_security_query = query(r#"
+                INSERT INTO securities (email) VALUES (?)
+            "#)
                 .bind(email)
                 .execute(&data.db)
                 .await;
@@ -149,23 +134,13 @@ pub async fn create_user(
                     ).into_response();
                 }
                 Err(err) => {
-                    dbg!("Could not add security: {}", err);
-                    return (
-                        StatusCode::BAD_REQUEST,
-                        Json(json!({
-                            "err": "Failed to register security"
-                        }))
-                    ).into_response();
+                    eprintln!("Could not add security: {}", err);
+                    return GGError::RegistrationFailure("Failed to register security".into()).into_response();
                 }
             }
         }
         _ => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "The specified category did not match any of the available options"
-                }))
-            ).into_response();
+            return GGError::Stupidity("The specified category did not match any of the available options".into()).into_response();
         }
     }
 }

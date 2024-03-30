@@ -4,7 +4,7 @@ use axum::Router;
 
 use crate::{
     config::AppState,
-    middleware::{ self },
+    middleware,
     user, resident, security
 };
 

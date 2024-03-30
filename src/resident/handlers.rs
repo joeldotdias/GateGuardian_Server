@@ -14,6 +14,7 @@ use sqlx::{ Row, query, query_as };
 
 use crate::{
     config::AppState,
+    error::GGError,
     middleware::CurrUser,
     resident::schema::{
         AddHomeDetailsSchema, AdminResidentDto, AdminSecurityDto, DashProfileDetails,
@@ -40,13 +41,8 @@ pub async fn get_resident_by_email(
                 resident.try_get::<i32, _>("society_id").unwrap()
             }
             Err(err) => {
-                dbg!("Could not find society: {}", err);
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({
-                        "err": "Your society could not be found"
-                    }))
-                ).into_response();
+                eprintln!("Could not find society: {}", err);
+                return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
             }
     };
 
@@ -66,13 +62,8 @@ pub async fn get_resident_by_email(
                 (StatusCode::OK, Json(resident)).into_response()
             }
             Err(err) => {
-                dbg!("Error: {}", err);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "err": "Could not fetch resident data"
-                    }))
-                ).into_response()
+                eprintln!("Error: {}", err);
+                GGError::ServerError("Could not fetch resident data".into()).into_response()
             }
     }
 }
@@ -101,21 +92,16 @@ pub async fn add_resident_home_details(
 
     match query_result {
         Ok(_) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(json!({
                     "message": "Home details updated successfully"
                 }))
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
-            dbg!("Could not update profile: {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not update home details"
-                }))
-            ).into_response();
+            eprintln!("Could not update profile: {}", err);
+            GGError::Stupidity("Could not update home details".into()).into_response()
         }
     }
 }
@@ -151,13 +137,8 @@ pub async fn update_resident_profile(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Could not update profile: {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not update pfp"
-                }))
-            ).into_response()
+            eprintln!("Could not update profile: {}", err);
+            GGError::Stupidity("Could not update profile".into()).into_response()
         }
     }
 }
@@ -192,13 +173,8 @@ pub async fn update_resident_pfp(
             ).into_response()
         }
         Err(err) => {
-            dbg!("err: {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not update pfp"
-                }))
-            ).into_response()
+            eprintln!("err: {}", err);
+            GGError::Stupidity("Could not update pfp".into()).into_response()
         }
     }
 }
@@ -228,12 +204,8 @@ pub async fn get_dashboard_details(
             ).into_response()
         },
         Err(err) => {
-            (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "err": err.to_string()
-                }))
-            ).into_response()
+            eprintln!("Could not get dashboard details: {}", err);
+            GGError::DefunctCredentials("Could not get dashboard details".into()).into_response()
         }
     }
 }
@@ -259,13 +231,8 @@ pub async fn get_visitors(
             resident.try_get::<i32, _>("resident_id").unwrap()
         }
         Err(err) => {
-            dbg!("Couldn't read resident data {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find resident details"
-                }))
-            ).into_response();
+            eprintln!("Couldn't read resident data {}", err);
+            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
         }
     };
 
@@ -289,13 +256,8 @@ pub async fn get_visitors(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't read data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find visitors"
-                }))
-            ).into_response()
+            eprintln!("Couldn't read data {}", err);
+            GGError::Stupidity("Could not find visitors".into()).into_response()
         }
     }
 }
@@ -320,13 +282,8 @@ pub async fn save_visitor(
             resident.try_get::<i32, _>("resident_id").unwrap()
         }
         Err(err) => {
-            dbg!("Couldn't read resident data {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find resident details"
-                }))
-            ).into_response();
+            eprintln!("Couldn't read resident data {}", err);
+            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
         }
     };
 
@@ -353,13 +310,8 @@ pub async fn save_visitor(
                 ).into_response()
             }
             Err(err) => {
-                dbg!("Couldn't save visitor {}", err);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({
-                        "err": "Could not save visitor details"
-                    }))
-                ).into_response()
+                eprintln!("Couldn't save visitor {}", err);
+                GGError::ServerError("Could not save visitor details".into()).into_response()
             }
     }
 }
@@ -383,13 +335,8 @@ pub async fn get_recent_visitor_otp(
             resident.try_get::<i32, _>("resident_id").unwrap()
         }
         Err(err) => {
-            dbg!("Couldn't read resident data {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find resident details"
-                }))
-            ).into_response();
+            eprintln!("Couldn't read resident data {}", err);
+            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
         }
     };
 
@@ -414,13 +361,8 @@ pub async fn get_recent_visitor_otp(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't read data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find visitor details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't read visitor data {}", err);
+            GGError::DefunctCredentials("Could not find visitor code".into()).into_response()
         }
     }
 }
@@ -450,13 +392,8 @@ pub async fn get_regulars(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't get regulars data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not fetch regulars details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't get regulars data {}", err);
+            GGError::Stupidity("Could not find regular details".into()).into_response()
         }
     }
 }
@@ -481,13 +418,8 @@ pub async fn save_regular(
             resident.try_get::<i32, _>("society_id").unwrap()
         }
         Err(err) => {
-            dbg!("Couldn't read resident data {}", err);
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find resident details"
-                }))
-            ).into_response();
+            eprintln!("Couldn't read resident data {}", err);
+            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
         }
     };
 
@@ -516,13 +448,8 @@ pub async fn save_regular(
                 ).into_response()
             }
             Err(err) => {
-                dbg!("Couldn't save regular {}", err);
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(json!({
-                        "err": "Could not save regular details"
-                    }))
-                ).into_response()
+                eprintln!("Couldn't save regular {}", err);
+                GGError::ServerError("Could not save regular details".into()).into_response()
             }
     }
 }
@@ -555,13 +482,8 @@ pub async fn get_recent_regular_otp(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't read data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not find regular details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't read data {}", err);
+            GGError::Stupidity("Could not find regular details".into()).into_response()
         }
     }
 }
@@ -598,13 +520,8 @@ pub async fn get_residents_by_society(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't get residents data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not fetch resident details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't get residents data {}", err);
+            GGError::Stupidity("Could not fetch resident details".into()).into_response()
         }
     }
 }
@@ -639,13 +556,8 @@ pub async fn get_security_by_society(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't get securities data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not fetch securities details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't get securities data {}", err);
+            GGError::Stupidity("Could not fetch security details".into()).into_response()
         }
     }
 }
@@ -680,13 +592,8 @@ pub async fn get_notices(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Couldn't get notices data {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not fetch notices details"
-                }))
-            ).into_response()
+            eprintln!("Couldn't get notices data {}", err);
+            return GGError::ServerError("Could not find notice details".into()).into_response();
         }
     }
 }
@@ -709,13 +616,8 @@ pub async fn add_notice(
                 resident.try_get::<i32, _>("society_id").unwrap()
             }
             Err(err) => {
-                dbg!("Could not find society: {}", err);
-                    return (
-                        StatusCode::UNAUTHORIZED,
-                        Json(json!({
-                            "err": "Your society could not be found"
-                        }))
-                    ).into_response();
+                eprintln!("Could not find society: {}", err);
+                return GGError::DefunctCredentials("Could not find your society details".into()).into_response();
             }
         };
 
@@ -741,13 +643,8 @@ pub async fn add_notice(
                 ).into_response()
             }
             Err(err) => {
-                dbg!("Failed to add notice: {:?}", err);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "err": "Failed to add notice"
-                    }))
-                ).into_response()
+                eprintln!("Failed to add notice: {:?}", err);
+                GGError::ServerError("Could not add notice".into()).into_response()
             }
     }
 }

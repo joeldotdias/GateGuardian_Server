@@ -16,7 +16,7 @@ use crate::{
 pub fn provide_user_routes(app_state: &Arc<AppState>) -> Router {
     Router::new()
         .route("/user", get(get_user))
-        .route_layer(middleware::from_fn(sanitize_headers))
         .route("/user-save", post(create_user))
+        .route_layer(middleware::from_fn(sanitize_headers))        
         .with_state(Arc::clone(app_state))
 }

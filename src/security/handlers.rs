@@ -13,6 +13,7 @@ use sqlx::{ query, query_as, Row };
 use crate::{
     config::AppState,
     middleware::CurrUser,
+    error::GGError,
     security::schema::{
         SecurityProfileDto, SecurityRegularDto, UpdatePfpParams, ResidentDetails, NotifyParams,
         UpdateSecurityProfileSchema, VerifiedVisitorDetails, VerifiedVisitorParams, VisitorLogDto, VisitorSecurityDto
@@ -28,8 +29,10 @@ pub async fn get_security_by_email(
 
     let email =  curr_user.email;
 
-    let society_id_query = query("SELECT society_id FROM users WHERE email = ?")
-        .bind(&email);
+    let society_id_query = query("
+        SELECT society_id FROM users WHERE email = ?
+    ")
+    .bind(&email);
 
     let society_id = match society_id_query
         .fetch_one(&data.db)
@@ -38,13 +41,8 @@ pub async fn get_security_by_email(
                 resident.try_get::<i32, _>("society_id").unwrap()
             }
             Err(err) => {
-                dbg!("Could not find society: {}", err);
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({
-                        "err": "Your society could not be found"
-                    }))
-                ).into_response();
+                eprintln!("Could not find society: {}", err);
+                return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
             }
     };
 
@@ -64,13 +62,8 @@ pub async fn get_security_by_email(
                 (StatusCode::OK, Json(security)).into_response()
             }
             Err(err) => {
-                dbg!("Error: {}", err);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "err": "Could not fetch security data"
-                    }))
-                ).into_response()
+                eprintln!("Error: {}", err);
+                GGError::ServerError("Could not fetch security data".into()).into_response()
             }
     }
 }
@@ -92,13 +85,8 @@ pub async fn get_visitors(
         .await {
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "err": "Did not find security credentials"
-                }))
-            ).into_response();
+            eprintln!("Could not fetch security details :{}", err);
+            return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
         }
     };
 
@@ -126,13 +114,8 @@ pub async fn get_visitors(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Could not fetch visitors data: {}", err);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch visitors data"
-                }))
-            ).into_response()
+            eprintln!("Could not fetch visitors data: {}", err);
+            GGError::ServerError("Could not fetch visitors data for your society".into()).into_response()
         }
     }
 }
@@ -156,13 +139,8 @@ pub async fn verified_visitor_to_logs(
         .await {
             Ok(visitor_data) => visitor_data,
             Err(err) => {
-                dbg!("Could not fetch visitor data:{}", err);
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "err": "Could not fetch visitor data with provided details"
-                    }))
-                ).into_response();
+                eprintln!("Could not fetch visitor data:{}", err);
+                return GGError::DefunctCredentials( "Could not fetch visitor data with provided details".into()).into_response();
             }
     };
 
@@ -176,17 +154,9 @@ pub async fn verified_visitor_to_logs(
         .execute(&data.db)
         .await;
 
-    match remove_visitor_result {
-        Err(err) => {
-            dbg!("Could not remove visitor :{}", err);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not remove visitor"
-                }))
-            ).into_response();
-        }
-        _ => {}
+    if let Err(err) = remove_visitor_result {
+        eprintln!("Could not remove visitor :{}", err);
+        return GGError::Stupidity("Could not remove visitor".into()).into_response();
     }
 
     let add_visitor_to_logs_query = query("
@@ -209,13 +179,8 @@ pub async fn verified_visitor_to_logs(
                 ).into_response()
             }
             Err(err) => {
-                dbg!("Could not move visitor to logs: {}", err);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({
-                        "err": "Could not move visitor to logs"
-                    }))
-                ).into_response()
+                eprintln!("Could not move visitor to logs: {}", err);
+                GGError::Stupidity("Could not move visitor to logs".into()).into_response()
             }
     }
 }
@@ -235,13 +200,8 @@ pub async fn get_visitor_logs(
         .await {
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "err": "Did not find security credentials"
-                }))
-            ).into_response();
+            eprintln!("Could not fetch security details :{}", err);
+            return GGError::DefunctCredentials("Could not find security details".into()).into_response();
         }
     };
 
@@ -270,13 +230,8 @@ pub async fn get_visitor_logs(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Could not fetch visitor logs data: {}", err);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch visitor logs data"
-                }))
-            ).into_response()
+            eprintln!("Could not fetch visitor logs data: {}", err);
+            GGError::ServerError("Could not fetch visitor logs data".into()).into_response()
         }
     }
 }
@@ -300,13 +255,8 @@ pub async fn get_residents_to_notify(
         .await {
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "err": "Did not find security credentials"
-                }))
-            ).into_response();
+            eprintln!("Could not fetch security details :{}", err);
+            return GGError::DefunctCredentials("Did not remove security details".into()).into_response();
         }
     };
 
@@ -325,19 +275,14 @@ pub async fn get_residents_to_notify(
 
     match resident_details_result {
         Ok(residents) => {
-            return (
+            (
                 StatusCode::OK,
                 Json(residents)
-            ).into_response();
+            ).into_response()
         }
         Err(err) => {
-            dbg!("Could not fetch residents data: {}", err);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch residents data"
-                }))
-            ).into_response();
+            eprintln!("Could not fetch residents data: {}", err);
+            GGError::Stupidity("Could not fetch residents data".into()).into_response()
         }
     }
 }
@@ -359,13 +304,8 @@ pub async fn get_regulars(
         .await {
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
-            dbg!("Could not fetch security details :{}", err);
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({
-                    "err": "Did not find security credentials"
-                }))
-            ).into_response();
+            eprintln!("Could not fetch security details :{}", err);
+            return GGError::DefunctCredentials("Did not find secuirty details".into()).into_response();
         }
     };
 
@@ -388,13 +328,8 @@ pub async fn get_regulars(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Could not fetch regulars data: {}", err);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "err": "Could not fetch regulars data"
-                }))
-            ).into_response()
+            eprintln!("Could not fetch regulars data: {}", err);
+            GGError::ServerError("Could not fetch regulars data".into()).into_response()
         }
     }
 }
@@ -432,13 +367,8 @@ pub async fn update_security_profile(
             ).into_response()
         }
         Err(err) => {
-            dbg!("Could not update profile: {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not update profile"
-                }))
-            ).into_response()
+            eprintln!("Could not update profile: {}", err);
+            GGError::Stupidity("Could not update profile".into()).into_response()
         }
     }
 }
@@ -473,13 +403,8 @@ pub async fn update_security_pfp(
             ).into_response()
         }
         Err(err) => {
-            dbg!("err: {}", err);
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "err": "Could not update pfp"
-                }))
-            ).into_response()
+            eprintln!("err: {}", err);
+            GGError::Stupidity("Could not update pfp".into()).into_response()
         }
     }
 }
