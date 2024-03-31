@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
     Extension,
@@ -20,18 +20,21 @@ use crate::{
     }
 };
 
+use super::schema::GetUserParams;
+
 pub async fn get_user(
     State(data): State<Arc<AppState>>,
-    Extension(curr_user): Extension<CurrUser>
+    Query(params): Query<GetUserParams>
+    
 ) -> impl IntoResponse {
-    println!("{}", curr_user.email);
+    // println!("{}", curr_user.email);
 
     let user_query = query_as::<_, User>("
         SELECT u.user_id, u.name, u.email, u.category, soc.society_name AS society 
         FROM users AS u INNER JOIN societies AS soc ON u.society_id = soc.society_id 
         WHERE u.email = ?
     ")
-    .bind(curr_user.email)
+    .bind(params.email)
     .fetch_one(&data.db)
     .await;
 
