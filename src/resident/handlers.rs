@@ -42,7 +42,7 @@ pub async fn get_resident_by_email(
             }
             Err(err) => {
                 eprintln!("Could not find society: {}", err);
-                return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
+                return GGError::DefunctCredentials("Your society could not be found").into_response();
             }
     };
 
@@ -63,7 +63,7 @@ pub async fn get_resident_by_email(
             }
             Err(err) => {
                 eprintln!("Error: {}", err);
-                GGError::ServerError("Could not fetch resident data".into()).into_response()
+                GGError::ServerError("Could not fetch resident data").into_response()
             }
     }
 }
@@ -101,7 +101,7 @@ pub async fn add_resident_home_details(
         }
         Err(err) => {
             eprintln!("Could not update profile: {}", err);
-            GGError::Stupidity("Could not update home details".into()).into_response()
+            GGError::Stupidity("Could not update home details").into_response()
         }
     }
 }
@@ -138,7 +138,7 @@ pub async fn update_resident_profile(
         }
         Err(err) => {
             eprintln!("Could not update profile: {}", err);
-            GGError::Stupidity("Could not update profile".into()).into_response()
+            GGError::Stupidity("Could not update profile").into_response()
         }
     }
 }
@@ -174,7 +174,7 @@ pub async fn update_resident_pfp(
         }
         Err(err) => {
             eprintln!("err: {}", err);
-            GGError::Stupidity("Could not update pfp".into()).into_response()
+            GGError::Stupidity("Could not update pfp").into_response()
         }
     }
 }
@@ -205,7 +205,7 @@ pub async fn get_dashboard_details(
         },
         Err(err) => {
             eprintln!("Could not get dashboard details: {}", err);
-            GGError::DefunctCredentials("Could not get dashboard details".into()).into_response()
+            GGError::DefunctCredentials("Could not get dashboard details").into_response()
         }
     }
 }
@@ -232,7 +232,7 @@ pub async fn get_visitors(
         }
         Err(err) => {
             eprintln!("Couldn't read resident data {}", err);
-            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
+            return GGError::DefunctCredentials("Could not find resident details").into_response();
         }
     };
 
@@ -257,7 +257,7 @@ pub async fn get_visitors(
         }
         Err(err) => {
             eprintln!("Couldn't read data {}", err);
-            GGError::Stupidity("Could not find visitors".into()).into_response()
+            GGError::Stupidity("Could not find visitors").into_response()
         }
     }
 }
@@ -283,7 +283,7 @@ pub async fn save_visitor(
         }
         Err(err) => {
             eprintln!("Couldn't read resident data {}", err);
-            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
+            return GGError::DefunctCredentials("Could not find resident details").into_response();
         }
     };
 
@@ -311,7 +311,7 @@ pub async fn save_visitor(
             }
             Err(err) => {
                 eprintln!("Couldn't save visitor {}", err);
-                GGError::ServerError("Could not save visitor details".into()).into_response()
+                GGError::ServerError("Could not save visitor details").into_response()
             }
     }
 }
@@ -336,7 +336,7 @@ pub async fn get_recent_visitor_otp(
         }
         Err(err) => {
             eprintln!("Couldn't read resident data {}", err);
-            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
+            return GGError::DefunctCredentials("Could not find resident details").into_response();
         }
     };
 
@@ -362,7 +362,7 @@ pub async fn get_recent_visitor_otp(
         }
         Err(err) => {
             eprintln!("Couldn't read visitor data {}", err);
-            GGError::DefunctCredentials("Could not find visitor code".into()).into_response()
+            GGError::DefunctCredentials("Could not find visitor code").into_response()
         }
     }
 }
@@ -393,7 +393,7 @@ pub async fn get_regulars(
         }
         Err(err) => {
             eprintln!("Couldn't get regulars data {}", err);
-            GGError::Stupidity("Could not find regular details".into()).into_response()
+            GGError::Stupidity("Could not find regular details").into_response()
         }
     }
 }
@@ -419,7 +419,7 @@ pub async fn save_regular(
         }
         Err(err) => {
             eprintln!("Couldn't read resident data {}", err);
-            return GGError::DefunctCredentials("Could not find resident details".into()).into_response();
+            return GGError::DefunctCredentials("Could not find resident details").into_response();
         }
     };
 
@@ -449,7 +449,7 @@ pub async fn save_regular(
             }
             Err(err) => {
                 eprintln!("Couldn't save regular {}", err);
-                GGError::ServerError("Could not save regular details".into()).into_response()
+                GGError::ServerError("Could not save regular details").into_response()
             }
     }
 }
@@ -483,7 +483,7 @@ pub async fn get_recent_regular_otp(
         }
         Err(err) => {
             eprintln!("Couldn't read data {}", err);
-            GGError::Stupidity("Could not find regular details".into()).into_response()
+            GGError::Stupidity("Could not find regular details").into_response()
         }
     }
 }
@@ -521,7 +521,7 @@ pub async fn get_residents_by_society(
         }
         Err(err) => {
             eprintln!("Couldn't get residents data {}", err);
-            GGError::Stupidity("Could not fetch resident details".into()).into_response()
+            GGError::Stupidity("Could not fetch resident details").into_response()
         }
     }
 }
@@ -557,7 +557,7 @@ pub async fn get_security_by_society(
         }
         Err(err) => {
             eprintln!("Couldn't get securities data {}", err);
-            GGError::Stupidity("Could not fetch security details".into()).into_response()
+            GGError::Stupidity("Could not fetch security details").into_response()
         }
     }
 }
@@ -593,7 +593,7 @@ pub async fn get_notices(
         }
         Err(err) => {
             eprintln!("Couldn't get notices data {}", err);
-            return GGError::ServerError("Could not find notice details".into()).into_response();
+            return GGError::ServerError("Could not find notice details").into_response();
         }
     }
 }
@@ -617,7 +617,7 @@ pub async fn add_notice(
             }
             Err(err) => {
                 eprintln!("Could not find society: {}", err);
-                return GGError::DefunctCredentials("Could not find your society details".into()).into_response();
+                return GGError::DefunctCredentials("Could not find your society details").into_response();
             }
         };
 
@@ -644,7 +644,7 @@ pub async fn add_notice(
             }
             Err(err) => {
                 eprintln!("Failed to add notice: {:?}", err);
-                GGError::ServerError("Could not add notice".into()).into_response()
+                GGError::ServerError("Could not add notice").into_response()
             }
     }
 }

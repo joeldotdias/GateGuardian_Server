@@ -44,7 +44,7 @@ pub async fn get_user(
         }
         Err(err) => {
             eprintln!("Error: {}", err);
-            GGError::DefunctCredentials("Could not fetch user details".into()).into_response()
+            GGError::DefunctCredentials("Could not fetch user details").into_response()
         }
     }
 }
@@ -74,7 +74,7 @@ pub async fn create_user(
             }
             Err(err) => {
                 eprintln!("Could not add resident: {}", err);
-                    return GGError::DefunctCredentials("Your society has not been registered yet".into()).into_response();
+                    return GGError::DefunctCredentials("Your society has not been registered yet").into_response();
             }
     };
     
@@ -91,7 +91,7 @@ pub async fn create_user(
 
     if let Err(err) = query_result {
         eprintln!("Could not add to the users table {}", err);
-        return GGError::RegistrationFailure("Failed to register user".into()).into_response();
+        return GGError::RegistrationFailure("Failed to register user").into_response();
     }
     
     match category {
@@ -114,7 +114,7 @@ pub async fn create_user(
                 }
                 Err(err) => {
                     eprintln!("Could not add resident: {}", err);
-                    return GGError::RegistrationFailure("Failed to register resident".into()).into_response();
+                    return GGError::RegistrationFailure("Failed to register resident").into_response();
                 }
             }
         }
@@ -138,12 +138,12 @@ pub async fn create_user(
                 }
                 Err(err) => {
                     eprintln!("Could not add security: {}", err);
-                    return GGError::RegistrationFailure("Failed to register security".into()).into_response();
+                    return GGError::RegistrationFailure("Failed to register security").into_response();
                 }
             }
         }
         _ => {
-            return GGError::Stupidity("The specified category did not match any of the available options".into()).into_response();
+            return GGError::Stupidity("The specified category did not match any of the available options").into_response();
         }
     }
 }

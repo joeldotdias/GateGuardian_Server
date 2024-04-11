@@ -42,7 +42,7 @@ pub async fn get_security_by_email(
             }
             Err(err) => {
                 eprintln!("Could not find society: {}", err);
-                return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
+                return GGError::DefunctCredentials("Your society could not be found").into_response();
             }
     };
 
@@ -63,7 +63,7 @@ pub async fn get_security_by_email(
             }
             Err(err) => {
                 eprintln!("Error: {}", err);
-                GGError::ServerError("Could not fetch security data".into()).into_response()
+                GGError::ServerError("Could not fetch security data").into_response()
             }
     }
 }
@@ -86,7 +86,7 @@ pub async fn get_visitors(
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
             eprintln!("Could not fetch security details :{}", err);
-            return GGError::DefunctCredentials("Your society could not be found".into()).into_response();
+            return GGError::DefunctCredentials("Your society could not be found").into_response();
         }
     };
 
@@ -115,7 +115,7 @@ pub async fn get_visitors(
         }
         Err(err) => {
             eprintln!("Could not fetch visitors data: {}", err);
-            GGError::ServerError("Could not fetch visitors data for your society".into()).into_response()
+            GGError::ServerError("Could not fetch visitors data for your society").into_response()
         }
     }
 }
@@ -140,7 +140,7 @@ pub async fn verified_visitor_to_logs(
             Ok(visitor_data) => visitor_data,
             Err(err) => {
                 eprintln!("Could not fetch visitor data:{}", err);
-                return GGError::DefunctCredentials( "Could not fetch visitor data with provided details".into()).into_response();
+                return GGError::DefunctCredentials( "Could not fetch visitor data with provided details").into_response();
             }
     };
 
@@ -156,7 +156,7 @@ pub async fn verified_visitor_to_logs(
 
     if let Err(err) = remove_visitor_result {
         eprintln!("Could not remove visitor :{}", err);
-        return GGError::Stupidity("Could not remove visitor".into()).into_response();
+        return GGError::Stupidity("Could not remove visitor").into_response();
     }
 
     let add_visitor_to_logs_query = query("
@@ -180,7 +180,7 @@ pub async fn verified_visitor_to_logs(
             }
             Err(err) => {
                 eprintln!("Could not move visitor to logs: {}", err);
-                GGError::Stupidity("Could not move visitor to logs".into()).into_response()
+                GGError::Stupidity("Could not move visitor to logs").into_response()
             }
     }
 }
@@ -201,7 +201,7 @@ pub async fn get_visitor_logs(
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
             eprintln!("Could not fetch security details :{}", err);
-            return GGError::DefunctCredentials("Could not find security details".into()).into_response();
+            return GGError::DefunctCredentials("Could not find security details").into_response();
         }
     };
 
@@ -231,7 +231,7 @@ pub async fn get_visitor_logs(
         }
         Err(err) => {
             eprintln!("Could not fetch visitor logs data: {}", err);
-            GGError::ServerError("Could not fetch visitor logs data".into()).into_response()
+            GGError::ServerError("Could not fetch visitor logs data").into_response()
         }
     }
 }
@@ -256,7 +256,7 @@ pub async fn get_residents_to_notify(
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
             eprintln!("Could not fetch security details :{}", err);
-            return GGError::DefunctCredentials("Did not remove security details".into()).into_response();
+            return GGError::DefunctCredentials("Did not remove security details").into_response();
         }
     };
 
@@ -282,7 +282,7 @@ pub async fn get_residents_to_notify(
         }
         Err(err) => {
             eprintln!("Could not fetch residents data: {}", err);
-            GGError::Stupidity("Could not fetch residents data".into()).into_response()
+            GGError::Stupidity("Could not fetch residents data").into_response()
         }
     }
 }
@@ -305,7 +305,7 @@ pub async fn get_regulars(
         Ok(society) => society.try_get::<i32, _>("society_id").unwrap_or_default(),
         Err(err) => {
             eprintln!("Could not fetch security details :{}", err);
-            return GGError::DefunctCredentials("Did not find secuirty details".into()).into_response();
+            return GGError::DefunctCredentials("Did not find secuirty details").into_response();
         }
     };
 
@@ -329,7 +329,7 @@ pub async fn get_regulars(
         }
         Err(err) => {
             eprintln!("Could not fetch regulars data: {}", err);
-            GGError::ServerError("Could not fetch regulars data".into()).into_response()
+            GGError::ServerError("Could not fetch regulars data").into_response()
         }
     }
 }
@@ -368,7 +368,7 @@ pub async fn update_security_profile(
         }
         Err(err) => {
             eprintln!("Could not update profile: {}", err);
-            GGError::Stupidity("Could not update profile".into()).into_response()
+            GGError::Stupidity("Could not update profile").into_response()
         }
     }
 }
@@ -404,7 +404,7 @@ pub async fn update_security_pfp(
         }
         Err(err) => {
             eprintln!("err: {}", err);
-            GGError::Stupidity("Could not update pfp".into()).into_response()
+            GGError::Stupidity("Could not update pfp").into_response()
         }
     }
 }

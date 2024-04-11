@@ -5,27 +5,36 @@ use axum::{
 };
 use serde_json::{ json, Value };
 
-#[derive(Clone)]
-pub enum GGError {
+// #[derive(Clone)]
+// pub enum GGError {
+//     NecessaryHeadersAbsent,
+//     DefunctCredentials(String),
+//     ServerError(String),
+//     RegistrationFailure(String),
+//     Stupidity(String)
+// }
+
+pub enum GGError<'a> {
     NecessaryHeadersAbsent,
-    DefunctCredentials(String),
-    ServerError(String),
-    RegistrationFailure(String),
-    Stupidity(String)
+    DefunctCredentials(&'a str),
+    ServerError(&'a str),
+    RegistrationFailure(&'a str),
+    Stupidity(&'a str)
 }
 
-impl IntoResponse for GGError {
+impl IntoResponse for GGError<'_> {
     fn into_response(self) -> Response {
         let (status, message) = (self.status(), self.err_msg());
         (status, message).into_response()
     }
 }
 
-impl GGError {
+impl GGError<'_> {
     pub fn status(&self) -> StatusCode {
         match self {
             Self::NecessaryHeadersAbsent => StatusCode::PRECONDITION_FAILED,
-            Self::ServerError(_) | Self::RegistrationFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::ServerError(_)
+            | Self::RegistrationFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::DefunctCredentials(_) => StatusCode::UNAUTHORIZED,
             Self::Stupidity(_) => StatusCode::BAD_REQUEST
         }
