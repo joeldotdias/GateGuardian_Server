@@ -11,7 +11,7 @@ pub async fn db_connection(database_url: &str) -> Pool<MySql> {
         .await {
             Ok(pool) => {
                 println!("Data Be Based");
-                match sqlx::migrate!("src/migrations").run(&pool).await {
+                match sqlx::migrate!("./migrations").run(&pool).await {
                     Ok(_) => {
                         println!("Migrations performed successfully");
                     },
@@ -24,6 +24,6 @@ pub async fn db_connection(database_url: &str) -> Pool<MySql> {
             Err(err) => {
                 dbg!("Data Be Soy: {}", err);
                 std::process::exit(1);
-            }  
+            }
     }
 }

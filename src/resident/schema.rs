@@ -44,7 +44,7 @@ pub struct DashProfileDetails {
     flat_no: i32,
     building: String,
     #[serde(rename="pfpUrl")]
-    pfp_url: String
+    pfp_url: Option<String>
 }
 
 

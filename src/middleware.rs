@@ -36,7 +36,7 @@ pub async fn sanitize_headers(mut req: Request, next: Next) -> Result<Response, 
             GGError::NecessaryHeadersAbsent.into_response()
         );
     };
-    
+
     req.extensions_mut().insert(CurrUser::from(header_str));
     Ok(next.run(req).await)
 }

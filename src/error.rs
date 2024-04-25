@@ -5,14 +5,6 @@ use axum::{
 };
 use serde_json::{ json, Value };
 
-// #[derive(Clone)]
-// pub enum GGError {
-//     NecessaryHeadersAbsent,
-//     DefunctCredentials(String),
-//     ServerError(String),
-//     RegistrationFailure(String),
-//     Stupidity(String)
-// }
 
 pub enum GGError<'a> {
     NecessaryHeadersAbsent,
@@ -39,7 +31,7 @@ impl GGError<'_> {
             Self::Stupidity(_) => StatusCode::BAD_REQUEST
         }
     }
-    
+
     fn err_msg(&self) -> axum::Json<Value>{
         let msg = match self {
             Self::NecessaryHeadersAbsent => "Could not detect required headers",
@@ -48,7 +40,7 @@ impl GGError<'_> {
             | Self::RegistrationFailure(msg)
             | Self::Stupidity(msg) => msg
         };
-        
+
         Json(json!({
             "err": msg
         }))
