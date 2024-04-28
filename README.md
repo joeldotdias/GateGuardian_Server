@@ -1,2 +1,3 @@
-# Java not good. Rewrote in Rust (btw)
-![Please load prime](/assets/primebtw.jpg)
+# Java didn't feel good. Rewrote in Rust (btw)
+
+First thing I wrote in rust
