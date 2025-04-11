@@ -1,4 +1,4 @@
-FROM rust:1.77 AS builder
+FROM rust:latest AS builder
 
 RUN user=root cargo new --bin ggserver
 WORKDIR /ggserver

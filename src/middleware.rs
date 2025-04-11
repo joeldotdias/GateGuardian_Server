@@ -5,9 +5,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use tower_http::{
-    trace::{ self, TraceLayer },
-    cors::{ Any, CorsLayer },
-    classify::{ SharedClassifier, ServerErrorsAsFailures }
+    classify::{ServerErrorsAsFailures, SharedClassifier},
+    cors::{Any, CorsLayer},
+    trace::{self, TraceLayer},
 };
 use tracing::Level;
 
@@ -15,7 +15,7 @@ use crate::error::GGError;
 
 #[derive(Clone)]
 pub struct CurrUser {
-    pub email: String
+    pub email: String,
 }
 
 impl From<String> for CurrUser {
@@ -25,16 +25,16 @@ impl From<String> for CurrUser {
 }
 
 pub async fn sanitize_headers(mut req: Request, next: Next) -> Result<Response, impl IntoResponse> {
-    let header_val = req.headers()
+    let header_val = req
+        .headers()
         .get("email")
         .and_then(|header| header.to_str().ok());
 
     let header_str = if let Some(header_val) = header_val {
         header_val.to_owned()
     } else {
-        return Err(
-            GGError::NecessaryHeadersAbsent.into_response()
-        );
+        println!("Well this happened");
+        return Err(GGError::NecessaryHeadersAbsent.into_response());
     };
 
     req.extensions_mut().insert(CurrUser::from(header_str));
@@ -47,11 +47,9 @@ pub fn cors_layer() -> CorsLayer {
         .allow_origin(Any)
 }
 
-pub fn logger() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>>{
+pub fn logger() -> TraceLayer<SharedClassifier<ServerErrorsAsFailures>> {
     println!("HERE BE THE LOGS");
     TraceLayer::new_for_http()
-        .make_span_with(trace::DefaultMakeSpan::new()
-            .level(Level::INFO))
-        .on_response(trace::DefaultOnResponse::new()
-            .level(Level::INFO))
+        .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+        .on_response(trace::DefaultOnResponse::new().level(Level::INFO))
 }
