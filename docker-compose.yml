@@ -6,14 +6,14 @@ services:
     environment:
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@squeel:3306/${MYSQL_DATABASE}
       - SOCKET_ADDR=0.0.0.0:6969
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     ports:
       - '6969:6969'
     depends_on:
       - squeel
-  
+
   squeel:
     image: mysql:8.0
     restart: always

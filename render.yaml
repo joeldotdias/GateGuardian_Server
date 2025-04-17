@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: gateg-server
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        value: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@squeel:3306/${MYSQL_DATABASE}
+      - key: SOCKET_ADDR
+        value: 0.0.0.0:6969
+      - key: MYSQL_DATABASE
+        value: gg_squeel
+      - key: MYSQL_USER
+        value: admin
+      - key: MYSQL_PASSWORD
+        sync: false
+
+  - type: pserv
+    name: squeel
+    runtime: image
+    image:
+      url: mysql:8.0
+    dockerCommand: docker-entrypoint.sh --default-authentication-plugin=mysql_native_password
+    region: oregon
+    plan: starter
+    disk:
+      name: mysql-data
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+    envVars:
+      - key: MYSQL_DATABASE
+        value: gg_squeel
+      - key: MYSQL_USER
+        value: admin
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_ROOT_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        value: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@localhost:3306/${MYSQL_DATABASE}
